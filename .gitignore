@@ -1,0 +1,46 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment & Secrets
+.env
+
+# Database (large binary — track schema, not data)
+data/nifty100.db
+data/nifty100.db-wal
+data/nifty100.db-shm
+
+# Output & generated reports
+output/
+reports/tearsheets/*.pdf
+reports/sector/*.pdf
+reports/portfolio/*.pdf
+reports/radar_charts/*.png
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+tests/reports/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.tmp
