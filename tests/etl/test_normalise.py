@@ -179,9 +179,11 @@ class TestNormalizeTickerEdgeCases:
 
     def test_exactly_12_chars_valid(self) -> None:
         """Boundary: 12 chars is the max allowed length."""
-        result = normalize_ticker("TWELVECHARS")
+        ticker = "A" * 12  # exactly 12 characters — the upper boundary
+        result = normalize_ticker(ticker)
         assert result is not None
         assert len(result) == 12
 
     def test_13_chars_returns_none(self) -> None:
-        assert normalize_ticker("THIRTEENCHAR") is None
+        ticker = "A" * 13  # one over the 12-char limit
+        assert normalize_ticker(ticker) is None

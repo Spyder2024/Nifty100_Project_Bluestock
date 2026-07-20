@@ -68,7 +68,7 @@ def normalize_year(raw: str) -> Optional[str]:
         year_str, month_str = match.group(1), match.group(2)
         month_int = int(month_str)
         if 1 <= month_int <= 12:
-            return f"{year_str}-{month_str:02d}"
+            return f"{year_str}-{month_int:02d}"
         return None
 
     # Plain 4-digit year: "2023" → assume March FY close
