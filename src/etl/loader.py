@@ -59,7 +59,7 @@ def load_excel(
     if not file_path.exists():
         raise FileNotFoundError(f"Data file not found: {file_path}")
 
-    df = pd.read_excel(file_path, header=header_row, sheet_name=sheet_name)
+    df = pd.read_excel(file_path, header=header_row, sheet_name=0)
     logger.info(
         "Loaded %s — %d rows, %d cols (header_row=%d)",
         file_path.name,
