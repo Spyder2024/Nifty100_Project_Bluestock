@@ -13,7 +13,7 @@ from src.etl.validator import (
     check_dq08_ticker_format,
     check_dq09_net_cash,
     check_dq10_non_negative_fixed_assets,
-    check_dq11_tax_rate_range,
+    check_dq11_tax_rate_range,  
     check_dq12_dividend_payout_cap,
     check_dq14_eps_sign_consistency,
     check_dq15_bs_strict_balance,

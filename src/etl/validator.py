@@ -743,7 +743,6 @@ def run_all_validations(
     bs = datasets.get("balancesheet", pd.DataFrame())
     cf = datasets.get("cashflow", pd.DataFrame())
     sectors = datasets.get("sectors", pd.DataFrame())
-    docs = datasets.get("documents", pd.DataFrame())
 
     logger.info("Running 16 DQ validation rules...")
 
