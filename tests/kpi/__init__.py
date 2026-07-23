@@ -1,0 +1,1 @@
+# tests/kpi/__init__.py
