@@ -389,6 +389,10 @@ def load_all_data(conn: sqlite3.Connection) -> dict[str, int]:
 # =========================================================================
 # STEP 3 — Ratio computation for a single company-year row
 # =========================================================================
+def _unwrap(val):
+    """Extract first element if function returned a tuple."""
+    return val[0] if isinstance(val, tuple) else val
+
 def compute_row(
     is_row: dict[str, Optional[float]],
     bs_row: dict[str, Optional[float]],
@@ -422,8 +426,8 @@ def compute_row(
     # --- Profitability ratios ---
     npm = net_profit_margin(net_profit, sales)
     opm = operating_profit_margin(operating_profit, sales)
-    roe = return_on_equity(net_profit, total_equity)
-    roce = return_on_capital_employed(ebit, total_equity, borrowings)
+    roe = return_on_equity(net_profit, equity_capital, reserves)
+    roce = return_on_capital_employed(ebit, equity_capital, reserves, borrowings)
     roa = return_on_assets(net_profit, total_assets)
 
     # --- Leverage & coverage ---
@@ -436,10 +440,12 @@ def compute_row(
 
     # --- Cash flow KPIs ---
     fcf = free_cash_flow(cfo, cfi)
-    capex_int = capex_intensity(cfi, cfo)
-    fcf_conv = fcf_conversion_rate(fcf, operating_profit)
-    cfo_qs = cfo_quality_score(cfo, net_profit)
-    cap_alloc = capital_allocation_pattern(cfo, cfi, cff)
+    capex_int = _unwrap(capex_intensity(cfi, cfo))
+    fcf_conv = _unwrap(fcf_conversion_rate(fcf, operating_profit))    # Single-year CFO quality: CFO / PAT ratio (the function expects lists, not scalars)
+    cfo_qs = None
+    if cfo is not None and net_profit is not None and net_profit > 0:
+        cfo_qs = round((cfo / net_profit) * 100, 2)
+    cap_alloc = _unwrap(capital_allocation_pattern(cfo, cfi, cff))
 
     # --- Book value per share ---
     shares_outstanding = (equity_capital / face_value) if face_value and face_value > 0 else None
@@ -486,10 +492,10 @@ def compute_row(
 # =========================================================================
 # STEP 4 — CAGR computation (per company across all years)
 # =========================================================================
-def _cagr_column(is_rows: list[dict], metric: str) -> list[Optional[float]]:
-    """Extract a column of values from income_statement rows sorted by year."""
+def _cagr_column(is_rows: list[dict], metric: str) -> list[tuple[str, Optional[float]]]:
+    """Extract (year, value) pairs from income_statement rows sorted by year."""
     sorted_rows = sorted(is_rows, key=lambda r: r.get("year", ""))
-    return [_safe_float(r.get(metric)) for r in sorted_rows]
+    return [(r.get("year", ""), _safe_float(r.get(metric))) for r in sorted_rows]
 
 
 def enrich_with_cagrs(
@@ -500,27 +506,23 @@ def enrich_with_cagrs(
     pat_series = _cagr_column(all_is_for_company, "net_profit")
     eps_series = _cagr_column(all_is_for_company, "eps")
 
-    years_sorted = sorted(
-        {r.get("year", "") for r in all_is_for_company if r.get("year")}
-    )
-
     # Compute CAGRs
-    rev_cagrs = compute_all_cagrs(revenue_series, years_sorted)
-    pat_cagrs = compute_all_cagrs(pat_series, years_sorted)
-    eps_cagrs = compute_all_cagrs(eps_series, years_sorted)
+    rev_cagrs = compute_all_cagrs(revenue_series)
+    pat_cagrs = compute_all_cagrs(pat_series)
+    eps_cagrs = compute_all_cagrs(eps_series)
 
     # Map year → CAGR values
     for row in rows:
         yr = row["year"]
-        row["revenue_cagr_3yr"] = rev_cagrs.get("cagr_3yr")
-        row["revenue_cagr_5yr"] = rev_cagrs.get("cagr_5yr")
-        row["revenue_cagr_10yr"] = rev_cagrs.get("cagr_10yr")
-        row["pat_cagr_3yr"] = pat_cagrs.get("cagr_3yr")
-        row["pat_cagr_5yr"] = pat_cagrs.get("cagr_5yr")
-        row["pat_cagr_10yr"] = pat_cagrs.get("cagr_10yr")
-        row["eps_cagr_3yr"] = eps_cagrs.get("cagr_3yr")
-        row["eps_cagr_5yr"] = eps_cagrs.get("cagr_5yr")
-        row["eps_cagr_10yr"] = eps_cagrs.get("cagr_10yr")
+        row["revenue_cagr_3yr"] = _unwrap(rev_cagrs.get("cagr_3yr"))
+        row["revenue_cagr_5yr"] = _unwrap(rev_cagrs.get("cagr_5yr"))
+        row["revenue_cagr_10yr"] = _unwrap(rev_cagrs.get("cagr_10yr"))
+        row["pat_cagr_3yr"] = _unwrap(pat_cagrs.get("cagr_3yr"))
+        row["pat_cagr_5yr"] = _unwrap(pat_cagrs.get("cagr_5yr"))
+        row["pat_cagr_10yr"] = _unwrap(pat_cagrs.get("cagr_10yr"))
+        row["eps_cagr_3yr"] = _unwrap(eps_cagrs.get("cagr_3yr"))
+        row["eps_cagr_5yr"] = _unwrap(eps_cagrs.get("cagr_5yr"))
+        row["eps_cagr_10yr"] = _unwrap(eps_cagrs.get("cagr_10yr"))
 
 
 # =========================================================================
@@ -768,7 +770,10 @@ if __name__ == "__main__":
     print(f"  Companies      : {result.get('distinct_companies', 0)}")
     print(f"  Years covered  : {result.get('distinct_years', 0)}")
 
-    if result.get("total_rows", 0) < 1100:
+    if "error" in result:
+        print(f"\n  ⚠ ERROR: {result['error']}")
+        print("  Ensure Excel files exist in data/ folder and re-run.")
+    elif result.get("total_rows", 0) < 1100:
         print(f"\n  ⚠ WARNING: {result['total_rows']} rows < 1100 target!")
     else:
         print(f"\n  ✓ Target of 1,100+ rows MET!")

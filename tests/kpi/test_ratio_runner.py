@@ -436,4 +436,4 @@ class TestFullPipeline:
         row = compute_row(sample_is_data[2], sample_bs_data[2], sample_cf_data[2], "TCS", "2023-03")
         assert row["debt_to_equity"] == 0.0
         assert row["is_high_leverage"] == 0
-        assert row["net_debt_cr"] == 0.0
+        assert row["net_debt_cr"] == -25000.0  # 0 borrowings - 25000 investments
