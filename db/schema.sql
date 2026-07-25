@@ -160,3 +160,21 @@ CREATE TABLE IF NOT EXISTS peer_groups (
     is_benchmark    INTEGER DEFAULT 0,
     PRIMARY KEY (peer_group_name, company_id)
 );
+
+-- Day 18: Peer Percentile Rankings
+-- One row per (company, year, metric) — long/tidy format.
+
+CREATE TABLE IF NOT EXISTS peer_percentiles (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_name    TEXT    NOT NULL,
+    year            INTEGER NOT NULL,
+    peer_group      TEXT    NOT NULL,
+    metric_name     TEXT    NOT NULL,
+    raw_value       REAL,
+    percentile_rank REAL,
+    peer_count      INTEGER,
+    UNIQUE(company_name, year, metric_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_peer_lookup
+    ON peer_percentiles(company_name, year);
