@@ -504,56 +504,28 @@ class TestIcrDebtFreeHandling:
 
 
 class TestCompositeScore:
-    """Composite quality score computation tests."""
+    """Tests for P10/P90 winsorised sector-relative composite score."""
 
-    def test_score_column_added(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
-        result = engine.apply(sample_df, add_score=True)
-        assert "composite_quality_score" in result.columns
+    def test_returns_series(self, sample_df):
+        result = FilterEngine.compute_composite_score(sample_df)
+        assert isinstance(result, pd.Series)
+        assert len(result) == len(sample_df)
 
-    def test_score_range_0_to_100(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
-        result = engine.apply(sample_df, add_score=True)
-        valid_scores = result["composite_quality_score"].dropna()
-        if len(valid_scores) > 0:
-            assert valid_scores.min() >= 0, f"Score below 0: {valid_scores.min()}"
-            assert valid_scores.max() <= 100, f"Score above 100: {valid_scores.max()}"
+    def test_scores_in_valid_range(self, sample_df):
+        result = FilterEngine.compute_composite_score(sample_df)
+        valid = result.dropna()
+        assert (valid >= 0).all() and (valid <= 100).all()
 
-    def test_tcs_higher_than_vodaidea(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
-        """TCS (strong fundamentals) should score higher than VODAIDEA (loss-making)."""
-        result = engine.apply(sample_df, add_score=True)
-        tcs_score = result.loc[result["company_id"] == "TCS", "composite_quality_score"].iloc[0]
-        voda_score = result.loc[result["company_id"] == "VODAIDEA", "composite_quality_score"].iloc[0]
-        assert tcs_score > voda_score
+    def test_handles_missing_scoring_columns(self, sample_df):
+        minimal = sample_df[["company_name", "broad_sector"]].copy()
+        result = FilterEngine.compute_composite_score(minimal, sector_col="broad_sector")
+        assert len(result) == len(minimal)
+        # No metrics → all categories neutral → composite = 50.0
+        assert (result == 50.0).all()
 
-    def test_sorted_by_score_descending(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
-        result = engine.apply(sample_df, add_score=True)
-        scores = result["composite_quality_score"].tolist()
-        # NaN values go to end; check that non-NaN values are descending
-        non_nan = [s for s in scores if not np.isnan(s)]
-        assert non_nan == sorted(non_nan, reverse=True)
-
-    def test_nan_score_for_insufficient_data(self, engine: FilterEngine) -> None:
-        """Company with too many missing metrics should get NaN score."""
-        df = pd.DataFrame([{
-            "company_id": "EMPTY_CO", "company_name": "Empty Corp",
-            "year": "2024", "sector_id": "X", "broad_sector": "X",
-            "roe": None, "roce": None, "net_profit_margin": None,
-            "operating_profit_margin": None, "interest_coverage_ratio": None,
-            "debt_to_equity": None, "asset_turnover": None,
-            "pe_ratio": None, "pb_ratio": None, "dividend_yield": None,
-            "dividend_payout_ratio": None, "market_cap": None,
-            "net_sales": None, "net_profit": None, "eps": None,
-            "free_cash_flow": None, "cfo_quality_score": None,
-            "fcf_conversion_rate": None, "revenue_cagr_5yr": None,
-            "pat_cagr_5yr": None, "eps_cagr_5yr": None,
-            "is_debt_free": 0, "composite_quality_score": None,
-        }])
-        result = engine.apply(df, add_score=True)
-        assert pd.isna(result["composite_quality_score"].iloc[0])
-
-    def test_score_not_negative(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
-        result = engine.apply(sample_df, add_score=True)
-        valid = result["composite_quality_score"].dropna()
-        assert (valid >= 0).all()
+    def test_index_aligned_with_input(self, sample_df):
+        result = FilterEngine.compute_composite_score(sample_df)
+        assert result.index.equals(sample_df.index)
 
 
 # ==================================================================

@@ -17,6 +17,7 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 import yaml
+from .scoring import compute_composite_score as _winsorised_composite_score
 
 # Default config path
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "screener_config.yaml"
@@ -157,84 +158,20 @@ class FilterEngine:
         return pd.to_numeric(df[col], errors="coerce")
 
     @classmethod
-    def compute_composite_score(cls, df: pd.DataFrame) -> pd.Series:
-        """Compute a basic composite quality score (0-100) for each row.
+    def compute_composite_score(cls, df: pd.DataFrame, sector_col: str = "sector") -> pd.Series:
+        """P10/P90 winsorised sector-relative composite score.
 
-        Day 15 version: simple weighted average of available metrics.
-        Day 17 will replace this with P10/P90 winsorised sector-relative scoring.
+        Replaces the basic linear scoring (Day 15) with sector-relative
+        percentile ranking after P10/P90 winsorisation.
 
         Weights:
-            Profitability (35%): ROE 15% + ROCE 10% + NPM 10%
-            Cash Quality  (30%): FCF positive flag 10% + CFO/PAT 10% + FCF conv 10%
-            Growth       (20%): Revenue CAGR 5yr 10% + PAT CAGR 5yr 10%
-            Leverage     (15%): D/E score 10% + ICR score 5%
+            Profitability 35 % | Cash Quality 30 %
+            Growth 20 %      | Leverage 15 %
 
-        Gracefully handles DataFrames missing metric columns (returns NaN).
+        Returns:
+            pd.Series: Composite scores (0-100), indexed like *df*.
         """
-        scores = pd.Series(np.nan, index=df.index)
-
-        # --- Profitability (35%) ---
-        roe_pts = cls._safe_col(df, "roe").clip(0, 40) / 40 * 15
-        roce_pts = cls._safe_col(df, "roce").clip(0, 30) / 30 * 10
-        npm_pts = cls._safe_col(df, "net_profit_margin").clip(0, 25) / 25 * 10
-
-        profitability = roe_pts.fillna(0) + roce_pts.fillna(0) + npm_pts.fillna(0)
-
-        # --- Cash Quality (30%) ---
-        fcf = cls._safe_col(df, "free_cash_flow")
-        fcf_flag = (fcf > 0).astype(float) * 10
-
-        cfo_q = cls._safe_col(df, "cfo_quality_score").clip(50, 150)
-        cfo_q_pts = (cfo_q - 50) / 100 * 10
-
-        fcf_conv = cls._safe_col(df, "fcf_conversion_rate").clip(0, 100)
-        fcf_conv_pts = fcf_conv / 100 * 10
-
-        cash_quality = (
-            fcf_flag.fillna(0)
-            + cfo_q_pts.fillna(0)
-            + fcf_conv_pts.fillna(0)
-        )
-
-        # --- Growth (20%) ---
-        rev_cagr = cls._safe_col(df, "revenue_cagr_5yr").clip(0, 30)
-        rev_cagr_pts = rev_cagr / 30 * 10
-
-        pat_cagr = cls._safe_col(df, "pat_cagr_5yr").clip(0, 30)
-        pat_cagr_pts = pat_cagr / 30 * 10
-
-        growth = rev_cagr_pts.fillna(0) + pat_cagr_pts.fillna(0)
-
-        # --- Leverage (15%) ---
-        de = cls._safe_col(df, "debt_to_equity")
-        de_score = (1 - de.clip(0, 2) / 2) * 10
-
-        icr = cls._safe_col(df, "interest_coverage_ratio")
-        icr_pts = icr.clip(0, 15) / 15 * 5
-
-        leverage = de_score.fillna(0) + icr_pts.fillna(0)
-
-        # --- Total ---
-        scores = (profitability + cash_quality + growth + leverage).round(2)
-
-        # Count how many metrics were available (only columns that exist)
-        metric_cols = [
-            c for c in [
-                "roe", "roce", "net_profit_margin", "free_cash_flow",
-                "cfo_quality_score", "fcf_conversion_rate",
-                "revenue_cagr_5yr", "pat_cagr_5yr",
-                "debt_to_equity", "interest_coverage_ratio",
-            ]
-            if c in df.columns
-        ]
-        if metric_cols:
-            available = df[metric_cols].notna().sum(axis=1)
-            min_metrics = 3
-            scores = scores.where(available >= min_metrics, np.nan)
-        else:
-            scores[:] = np.nan
-
-        return scores
+        return _winsorised_composite_score(df, sector_col=sector_col)
 
     # ------------------------------------------------------------------
     # Core filter logic
