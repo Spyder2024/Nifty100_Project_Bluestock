@@ -438,19 +438,22 @@ class TestDeFinancialsSkip:
         assert "RELIANCE" not in ids  # D/E 0.65 > 0.5, not Financials
         assert "VODAIDEA" not in ids  # D/E 8.5
 
-    def test_de_zero_filter_keeps_only_debt_free(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
-        """D/E = 0 should keep only debt-free non-financial companies."""
+    def test_de_zero_filter_keeps_only_debt_free(self, engine, sample_df):
+        """D/E = 0 keeps only truly debt-free companies (no Financials skip).
+
+        When threshold is exactly 0, the filter asks a factual question --
+        "is this company debt-free?" -- so Financials are NOT exempt.
+        """
         result = engine.apply(sample_df, add_score=False, debt_to_equity=0.0)
         ids = result["company_id"].tolist()
-        # Financials always pass
-        assert "HDFCBANK" in ids
-        assert "SBIN" in ids
-        # Non-financials: only TCS (0.0) and ITC (0.01... wait, 0.01 > 0.0)
-        # Actually 0.01 > 0.0, so ITC is excluded
-        assert "TCS" in ids  # D/E exactly 0.0
-        assert "INFY" in ids  # D/E 0.0
+        # Financials with D/E > 0 are NOT exempt when checking D/E=0
+        assert "HDFCBANK" not in ids  # D/E 5.8
+        assert "SBIN" not in ids      # D/E 7.2
+        # Only truly debt-free companies pass
+        assert "TCS" in ids
+        assert "INFY" in ids
         assert "ITC" not in ids  # D/E 0.01 > 0.0
-        assert "RELIANCE" not in ids  # D/E 0.65
+        assert "RELIANCE" not in ids
         assert "VODAIDEA" not in ids
 
 

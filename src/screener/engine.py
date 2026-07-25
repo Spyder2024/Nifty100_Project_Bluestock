@@ -372,19 +372,30 @@ class FilterEngine:
 
         Financials sector companies are exempt from D/E filtering
         because their business model inherently uses high leverage.
+
+        Exception: when threshold is exactly 0 (max direction), the
+        filter is asking "is this company debt-free?" -- a factual
+        question that applies to ALL sectors including Financials.
         """
+        # D/E=0 (debt-free check) applies to ALL sectors -- no skip
+        is_debt_free_check = (direction == "max" and threshold == 0.0)
         is_financial = df.apply(self._is_any_financial_sector, axis=1)
+
+        # Only skip Financials when it is NOT a debt-free check
+        if is_debt_free_check:
+            skip_financials = pd.Series(False, index=df.index)
+        else:
+            skip_financials = is_financial
 
         mask = pd.Series(True, index=df.index)
 
         if direction == "max":
-            # Keep rows where D/E <= threshold (or Financials)
-            mask = (df["debt_to_equity"] <= threshold) | is_financial
+            mask = (df["debt_to_equity"] <= threshold) | skip_financials
         elif direction == "min":
             mask = (df["debt_to_equity"] >= threshold) | is_financial
 
-        # None/NaN in D/E: only pass if Financials
-        mask = mask | (df["debt_to_equity"].isna() & is_financial)
+        # NaN in D/E: only pass if Financials (and not D/E=0 check)
+        mask = mask | (df["debt_to_equity"].isna() & skip_financials)
 
         return df.loc[mask]
 

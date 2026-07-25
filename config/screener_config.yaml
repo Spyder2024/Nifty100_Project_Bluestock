@@ -126,6 +126,13 @@ filters:
     direction: "min"
     default: null
     unit: "Cr"
+  
+  dividend_payout_ratio:
+    column: "dividend_payout_ratio"
+    display_name: "Dividend Payout Ratio"
+    direction: "max"
+    default: null
+    unit: "%"
 
 # =============================================================
 # Preset screeners (Day 16 — defined here for analyst convenience)
