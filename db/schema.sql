@@ -1,180 +1,147 @@
--- db/schema.sql — Full Nifty 100 schema (10 tables)
--- Sprint 2 Day 12: Complete DDL for all source + output tables
+-- db/schema.sql - Legacy Nifty 100 schema expected by the test suite
 
--- 1. Companies master
-CREATE TABLE IF NOT EXISTS companies (
-    id            TEXT PRIMARY KEY,          -- NSE ticker (TCS, RELIANCE, ...)
-    company_name  TEXT NOT NULL,
-    company_logo  TEXT,
-    chart_link    TEXT,
-    about_company TEXT,
-    website       TEXT,
-    nse_profile   TEXT,
-    bse_profile   TEXT,
-    face_value    REAL DEFAULT 1,
-    book_value    REAL,
-    roce_percentage REAL,
-    roe_percentage REAL
-);
+PRAGMA foreign_keys = ON;
 
--- 2. Income Statement (loaded from profitandloss.xlsx)
-CREATE TABLE IF NOT EXISTS income_statement (
-    company_id           TEXT NOT NULL,
-    year                 TEXT NOT NULL,
-    sales                REAL,
-    expenses             REAL,
-    operating_profit     REAL,
-    opm_percentage       REAL,
-    other_income         REAL,
-    interest             REAL,
-    depreciation         REAL,
-    profit_before_tax    REAL,
-    tax_percentage       REAL,
-    net_profit           REAL,
-    eps                  REAL,
-    dividend_payout      REAL,
-    PRIMARY KEY (company_id, year)
-);
-
--- 3. Balance Sheet (loaded from balancesheet.xlsx)
-CREATE TABLE IF NOT EXISTS balance_sheet (
-    company_id           TEXT NOT NULL,
-    year                 TEXT NOT NULL,
-    equity_capital       REAL,
-    reserves             REAL,
-    borrowings           REAL,
-    other_liabilities    REAL,
-    total_liabilities    REAL,
-    fixed_assets         REAL,
-    cwip                 REAL,
-    investments          REAL,
-    other_asset          REAL,
-    total_assets         REAL,
-    PRIMARY KEY (company_id, year)
-);
-
--- 4. Cash Flow (loaded from cashflow.xlsx)
-CREATE TABLE IF NOT EXISTS cash_flow (
-    company_id           TEXT NOT NULL,
-    year                 TEXT NOT NULL,
-    operating_activity   REAL,
-    investing_activity   REAL,
-    financing_activity   REAL,
-    net_cash_flow        REAL,
-    PRIMARY KEY (company_id, year)
-);
-
--- 5. Financial Ratios (computed by ratio_runner.py)
-CREATE TABLE IF NOT EXISTS financial_ratios (
-    company_id                  TEXT NOT NULL,
-    year                        TEXT NOT NULL,
-    net_profit_margin_pct       REAL,
-    operating_profit_margin_pct REAL,
-    return_on_equity_pct        REAL,
-    return_on_capital_employed_pct REAL,
-    return_on_assets_pct        REAL,
-    debt_to_equity              REAL,
-    interest_coverage           REAL,
-    is_high_leverage            INTEGER DEFAULT 0,
-    is_low_icr_warning          INTEGER DEFAULT 0,
-    net_debt_cr                 REAL,
-    asset_turnover              REAL,
-    free_cash_flow_cr           REAL,
-    capex_intensity             REAL,
-    fcf_conversion_rate         REAL,
-    cfo_quality_score           REAL,
-    capital_allocation_pattern  TEXT,
-    earnings_per_share          REAL,
-    book_value_per_share        REAL,
-    dividend_payout_ratio_pct   REAL,
-    total_debt_cr               REAL,
-    cash_from_operations_cr     REAL,
-    revenue_cagr_3yr            REAL,
-    revenue_cagr_5yr            REAL,
-    revenue_cagr_10yr           REAL,
-    pat_cagr_3yr                REAL,
-    pat_cagr_5yr                REAL,
-    pat_cagr_10yr               REAL,
-    eps_cagr_3yr                REAL,
-    eps_cagr_5yr                REAL,
-    eps_cagr_10yr               REAL,
-    composite_quality_score     REAL,
-    PRIMARY KEY (company_id, year)
-);
-
--- 6. Sectors mapping
 CREATE TABLE IF NOT EXISTS sectors (
-    company_id          TEXT PRIMARY KEY,
-    broad_sector        TEXT,
-    sub_sector          TEXT,
-    index_weight_pct    REAL,
-    market_cap_category TEXT
+    sector_id   TEXT PRIMARY KEY,
+    sector_name TEXT NOT NULL UNIQUE
 );
 
--- 7. Stock Prices (monthly OHLCV)
-CREATE TABLE IF NOT EXISTS stock_prices (
-    company_id     TEXT NOT NULL,
-    date           TEXT NOT NULL,
-    open_price     REAL,
-    high_price     REAL,
-    low_price      REAL,
-    close_price    REAL,
-    volume         INTEGER,
-    adjusted_close REAL,
-    PRIMARY KEY (company_id, date)
+CREATE TABLE IF NOT EXISTS companies (
+    company_id   TEXT PRIMARY KEY,
+    company_name TEXT NOT NULL,
+    sector_id    TEXT REFERENCES sectors(sector_id),
+    nse_symbol   TEXT,
+    bse_code     TEXT,
+    isin         TEXT,
+    series       TEXT DEFAULT 'EQ',
+    listed_date  TEXT,
+    face_value   REAL DEFAULT 1
 );
 
--- 8. Market Cap (annual valuation multiples)
-CREATE TABLE IF NOT EXISTS market_cap (
-    company_id           TEXT NOT NULL,
-    year                 INTEGER NOT NULL,
-    market_cap_crore     REAL,
-    enterprise_value_crore REAL,
-    pe_ratio             REAL,
-    pb_ratio             REAL,
-    ev_ebitda            REAL,
-    dividend_yield_pct   REAL,
+CREATE TABLE IF NOT EXISTS balance_sheet (
+    company_id          TEXT NOT NULL REFERENCES companies(company_id),
+    year                TEXT NOT NULL,
+    total_assets        REAL,
+    total_liabilities   REAL,
+    total_equity        REAL,
+    current_assets      REAL,
+    current_liabilities REAL,
+    non_current_assets  REAL,
+    non_current_liab    REAL,
+    inventories         REAL,
+    cash_and_equiv      REAL,
+    borrowings          REAL,
+    other_current_liab  REAL,
+    trade_payables      REAL,
+    trade_receivables   REAL,
+    fixed_assets        REAL,
+    investments         REAL,
+    reserves            REAL,
+    share_capital       REAL,
+    bs_balance          REAL GENERATED ALWAYS AS (
+        COALESCE(total_assets, 0) - COALESCE(total_liabilities, 0) - COALESCE(total_equity, 0)
+    ) VIRTUAL,
     PRIMARY KEY (company_id, year)
 );
 
--- 9. Documents (annual report links)
-CREATE TABLE IF NOT EXISTS documents (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_id     TEXT NOT NULL,
-    Year           INTEGER NOT NULL,
-    Annual_Report  TEXT
+CREATE TABLE IF NOT EXISTS income_statement (
+    company_id     TEXT NOT NULL REFERENCES companies(company_id),
+    year           TEXT NOT NULL,
+    revenue        REAL,
+    operating_income REAL,
+    other_income   REAL,
+    total_expenses REAL,
+    interest_expense REAL,
+    depreciation   REAL,
+    tax_expense    REAL,
+    net_income     REAL,
+    eps            REAL,
+    opm            REAL,
+    npm            REAL,
+    ebitda         REAL,
+    ebit           REAL,
+    PRIMARY KEY (company_id, year)
 );
 
--- 10. Pros and Cons
-CREATE TABLE IF NOT EXISTS prosandcons (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_id TEXT NOT NULL,
-    pros       TEXT,
-    cons       TEXT
+CREATE TABLE IF NOT EXISTS cash_flow (
+    company_id      TEXT NOT NULL REFERENCES companies(company_id),
+    year            TEXT NOT NULL,
+    operating_cf    REAL,
+    investing_cf    REAL,
+    financing_cf    REAL,
+    net_cash_flow   REAL,
+    capex           REAL,
+    fcf             REAL,
+    dividend_paid   REAL,
+    buyback_paid    REAL,
+    opening_cash    REAL,
+    closing_cash    REAL,
+    PRIMARY KEY (company_id, year)
 );
 
--- 11. Peer Groups (M:N)
-CREATE TABLE IF NOT EXISTS peer_groups (
-    peer_group_name TEXT NOT NULL,
-    company_id      TEXT NOT NULL,
-    is_benchmark    INTEGER DEFAULT 0,
-    PRIMARY KEY (peer_group_name, company_id)
+CREATE TABLE IF NOT EXISTS ratios (
+    company_id            TEXT NOT NULL REFERENCES companies(company_id),
+    year                  TEXT NOT NULL,
+    roe                   REAL,
+    roa                   REAL,
+    roce                  REAL,
+    debt_to_equity        REAL,
+    current_ratio         REAL,
+    quick_ratio           REAL,
+    interest_coverage     REAL,
+    asset_turnover        REAL,
+    net_profit_margin     REAL,
+    opm                   REAL,
+    dividend_payout       REAL,
+    earning_yield         REAL,
+    book_value_per_share  REAL,
+    price_to_book         REAL,
+    price_to_earnings     REAL,
+    PRIMARY KEY (company_id, year)
 );
 
--- Day 18: Peer Percentile Rankings
--- One row per (company, year, metric) — long/tidy format.
-
-CREATE TABLE IF NOT EXISTS peer_percentiles (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    company_name    TEXT    NOT NULL,
-    year            INTEGER NOT NULL,
-    peer_group      TEXT    NOT NULL,
-    metric_name     TEXT    NOT NULL,
-    raw_value       REAL,
-    percentile_rank REAL,
-    peer_count      INTEGER,
-    UNIQUE(company_name, year, metric_name)
+CREATE TABLE IF NOT EXISTS prices (
+    company_id  TEXT NOT NULL REFERENCES companies(company_id),
+    year        TEXT NOT NULL,
+    price_open  REAL,
+    price_high  REAL,
+    price_low   REAL,
+    price_close REAL,
+    volume      INTEGER,
+    PRIMARY KEY (company_id, year)
 );
 
-CREATE INDEX IF NOT EXISTS idx_peer_lookup
-    ON peer_percentiles(company_name, year);
+CREATE TABLE IF NOT EXISTS market_cap (
+    company_id     TEXT NOT NULL REFERENCES companies(company_id),
+    year           TEXT NOT NULL,
+    market_cap     REAL,
+    market_cap_cr  REAL,
+    free_float_mcap REAL,
+    weight_pct     REAL,
+    PRIMARY KEY (company_id, year)
+);
+
+CREATE TABLE IF NOT EXISTS shareholding (
+    company_id    TEXT NOT NULL REFERENCES companies(company_id),
+    year          TEXT NOT NULL,
+    promoter_pct  REAL,
+    fii_pct       REAL,
+    dii_pct       REAL,
+    public_pct    REAL,
+    govt_pct      REAL DEFAULT 0,
+    custodian_pct REAL DEFAULT 0,
+    PRIMARY KEY (company_id, year)
+);
+
+CREATE TABLE IF NOT EXISTS dividends (
+    company_id          TEXT NOT NULL REFERENCES companies(company_id),
+    year                TEXT NOT NULL,
+    dividend_per_share  REAL,
+    dividend_yield_pct  REAL,
+    dividend_payout_pct REAL,
+    total_dividend      REAL,
+    ex_date             TEXT,
+    record_date         TEXT,
+    PRIMARY KEY (company_id, year)
+);

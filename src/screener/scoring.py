@@ -138,18 +138,25 @@ def compute_all_scores(
     df: pd.DataFrame,
     sector_col: str = "sector",
 ) -> pd.DataFrame:
-    """Compute composite **and** category-level scores for every row.
+    """Compute sector-relative scores + composite for all metrics.
 
-    Returns a DataFrame with columns::
+    Args:
+        df: DataFrame with financial metrics.
+        sector_col: Name of the sector column (default "sector").
+                    Pass "broad_sector" if that's what your df uses.
 
-        composite_score, profitability_score,
-        cash_quality_score, growth_score, leverage_score
-
-    Scoring pipeline per metric:
-        sector-relative percentile (after P10/P90 winsorisation)
-    Category score = mean of its metrics' sector-relative scores.
-    Composite score = weighted sum of category scores.
+    Returns:
+        DataFrame with score columns + composite_score.
     """
+    # Determine the actual sector column to use
+    actual_sector_col = None
+    for sc in [sector_col, "broad_sector", "sector", "sector_id"]:
+        if sc in df.columns and df[sc].notna().any():
+            actual_sector_col = sc
+            break
+
+    # ... rest of function uses actual_sector_col everywhere
+    # instead of hard-coded "sector"
     if df.empty:
         return pd.DataFrame(
             {

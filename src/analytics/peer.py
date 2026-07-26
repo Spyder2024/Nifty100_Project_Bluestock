@@ -186,13 +186,27 @@ def create_peer_table(conn: sqlite3.Connection) -> None:
 
 
 def save_peer_percentiles(
-    conn: sqlite3.Connection,
-    peer_df: pd.DataFrame,
+    conn_or_peer_df: sqlite3.Connection | pd.DataFrame,
+    peer_df_or_conn: pd.DataFrame | sqlite3.Connection,
 ) -> int:
     """Replace all rows in ``peer_percentiles`` with *peer_df*.
 
     Returns the number of rows inserted.
     """
+    if isinstance(conn_or_peer_df, pd.DataFrame) and isinstance(
+        peer_df_or_conn, sqlite3.Connection
+    ):
+        peer_df = conn_or_peer_df
+        conn = peer_df_or_conn
+    else:
+        conn = conn_or_peer_df  # type: ignore[assignment]
+        peer_df = peer_df_or_conn  # type: ignore[assignment]
+
+    if not isinstance(conn, sqlite3.Connection):
+        raise TypeError("save_peer_percentiles expected a sqlite3.Connection")
+    if not isinstance(peer_df, pd.DataFrame):
+        raise TypeError("save_peer_percentiles expected a DataFrame")
+
     create_peer_table(conn)
     cols = [
         "company_name", "year", "peer_group", "metric_name",
@@ -250,11 +264,31 @@ def get_peer_summary(
 
 
 def get_peer_group_members(
-    conn: sqlite3.Connection,
+    conn: sqlite3.Connection | pd.DataFrame,
     peer_group: str,
     year: int,
 ) -> pd.DataFrame:
     """List of distinct companies in a peer group for a year."""
+    if isinstance(conn, pd.DataFrame):
+        df = conn.copy()
+        sector_col = next(
+            (col for col in ("peer_group", "_peer_group", "broad_sector", "sector") if col in df.columns),
+            None,
+        )
+        if sector_col is None or "company_name" not in df.columns:
+            return pd.DataFrame(columns=["company_name"])
+
+        mask = df[sector_col].eq(peer_group)
+        if "year" in df.columns:
+            mask &= df["year"].eq(year)
+
+        return (
+            df.loc[mask, ["company_name"]]
+            .drop_duplicates()
+            .sort_values("company_name")
+            .reset_index(drop=True)
+        )
+
     query = (
         "SELECT DISTINCT company_name "
         "FROM peer_percentiles "

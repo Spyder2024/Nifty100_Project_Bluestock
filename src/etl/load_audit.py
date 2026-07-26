@@ -115,11 +115,22 @@ def check_fk_integrity(conn: sqlite3.Connection) -> list[dict]:
 # ------------------------------------------------------------------
 
 def get_table_row_counts(conn: sqlite3.Connection) -> dict[str, int]:
-    rows = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    ).fetchall()
-    return {t[0]: conn.execute(f"SELECT COUNT(*) FROM {t[0]}").fetchone()[0]
-            for t in rows}
+    tables = [
+        "sectors",
+        "companies",
+        "balance_sheet",
+        "income_statement",
+        "cash_flow",
+        "ratios",
+        "prices",
+        "market_cap",
+        "shareholding",
+        "dividends",
+    ]
+    return {
+        table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        for table in tables
+    }
 
 
 # ------------------------------------------------------------------
