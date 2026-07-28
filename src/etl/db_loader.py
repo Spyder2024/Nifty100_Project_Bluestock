@@ -23,12 +23,12 @@ from src.etl.loader import (
     normalise_company_id,
     normalise_year_column,
 )
+from src.etl.normaliser import normalize_ticker
 
 logger = logging.getLogger(__name__)
 
 # ===================================================================
 # Column Mapping:  lowercase Excel header → DB column name
-# Add / adjust aliases here if your Excel headers differ.
 # ===================================================================
 
 COMPANY_COL_MAP = {
@@ -171,6 +171,10 @@ RATIOS_COL_MAP = {
     "price_to_earnings": "price_to_earnings",
     "pe_ratio": "price_to_earnings",
     "p_e_ratio": "price_to_earnings",
+    "net_profit_margin_pct": "net_profit_margin",
+    "operating_profit_margin_pct": "opm",
+    "return_on_equity_pct": "roe",
+    "dividend_payout_ratio_pct": "dividend_payout",
 }
 
 PRICES_COL_MAP = {
@@ -183,6 +187,10 @@ PRICES_COL_MAP = {
     "close": "price_close",
     "price_close": "price_close",
     "volume": "volume",
+    "open_price": "price_open",
+    "high_price": "price_high",
+    "low_price": "price_low",
+    "close_price": "price_close",
 }
 
 MCAP_COL_MAP = {
@@ -194,6 +202,7 @@ MCAP_COL_MAP = {
     "weight": "weight_pct",
     "weight_pct": "weight_pct",
     "nifty_weight": "weight_pct",
+    "market_cap_crore": "market_cap_cr",
 }
 
 SHAREHOLDING_COL_MAP = {
@@ -227,7 +236,6 @@ DIVIDEND_COL_MAP = {
     "record_date": "record_date",
 }
 
-# Aggregate: table_name → column-map
 FINANCIAL_TABLES = {
     "balance_sheet": BS_COL_MAP,
     "income_statement": IS_COL_MAP,
@@ -245,7 +253,6 @@ FINANCIAL_TABLES = {
 # ===================================================================
 
 def get_connection(db_path: str) -> sqlite3.Connection:
-    """Return a SQLite connection with FK enforcement and WAL mode."""
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
@@ -256,7 +263,6 @@ def get_connection(db_path: str) -> sqlite3.Connection:
 
 
 def create_schema(conn: sqlite3.Connection, schema_path: str) -> None:
-    """Execute schema.sql to create all 10 tables."""
     p = Path(schema_path)
     if not p.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")
@@ -266,7 +272,6 @@ def create_schema(conn: sqlite3.Connection, schema_path: str) -> None:
 
 
 def _rename_columns(df: pd.DataFrame, col_map: dict) -> pd.DataFrame:
-    """Rename columns that appear in *col_map* (key = lowercase header)."""
     rename = {}
     for col in df.columns:
         key = col.lower().strip().replace(" ", "_")
@@ -280,10 +285,9 @@ def _rename_columns(df: pd.DataFrame, col_map: dict) -> pd.DataFrame:
 # ===================================================================
 
 def load_sectors(conn: sqlite3.Connection, df: pd.DataFrame) -> int:
-    """Insert unique sectors.  Generates sector_id from sector_name."""
     count = 0
     for _, row in df.iterrows():
-        raw = row.get("sector_name") or row.get("sector") or row.get("name")
+        raw = row.get("sector_name") or row.get("sector") or row.get("name") or row.get("broad_sector")
         if not raw or pd.isna(raw):
             continue
         name = str(raw).strip()
@@ -302,7 +306,6 @@ def load_sectors(conn: sqlite3.Connection, df: pd.DataFrame) -> int:
 
 
 def load_companies(conn: sqlite3.Connection, df: pd.DataFrame) -> int:
-    """Insert companies; resolves sector_id from sector name."""
     count = 0
     for _, row in df.iterrows():
         cid = row.get("company_id")
@@ -311,7 +314,6 @@ def load_companies(conn: sqlite3.Connection, df: pd.DataFrame) -> int:
         cid = str(cid).strip()
         name = str(row.get("company_name") or cid).strip()
 
-        # Resolve sector_id
         raw_sector = row.get("sector_id")
         sector_id = None
         if raw_sector and not pd.isna(raw_sector):
@@ -351,7 +353,6 @@ def load_financial_table(
     table_name: str,
     col_map: dict,
 ) -> int:
-    """Generic loader for any (company_id, year) financial table."""
     df = _rename_columns(df, col_map)
 
     for req in ("company_id", "year"):
@@ -359,7 +360,6 @@ def load_financial_table(
             logger.error("%s missing required column '%s'", table_name, req)
             return 0
 
-    # Determine insertable columns (must exist in both df and target)
     target_cols = {"company_id", "year"} | set(col_map.values())
     insert_cols = [c for c in df.columns if c in target_cols]
 
@@ -405,10 +405,6 @@ def run_full_load(
     data_dir: Optional[str] = None,
     schema_path: Optional[str] = None,
 ) -> dict[str, int]:
-    """Create DB, run schema, load every Excel file.
-
-    Returns dict  {table_name: row_count}.
-    """
     project_root = Path(__file__).resolve().parent.parent.parent
     data_dir = data_dir or str(project_root / "data")
     schema_path = schema_path or str(project_root / "db" / "schema.sql")
@@ -425,25 +421,37 @@ def run_full_load(
     except Exception as exc:
         logger.error("sectors load failed: %s", exc)
         results["sectors"] = 0
+        s_df = pd.DataFrame()
 
     # --- companies (core file, header=1) ---
     try:
         c_df = load_core_file("companies")
+        if "id" in c_df.columns and "company_id" not in c_df.columns:
+            c_df = c_df.rename(columns={"id": "company_id"})
         c_df = normalise_company_id(c_df)
+        if "company_id" in s_df.columns and "broad_sector" in s_df.columns:
+            sec_map = (
+                s_df.dropna(subset=["company_id", "broad_sector"])
+                .assign(company_id=lambda d: d["company_id"].apply(normalize_ticker))
+                .set_index("company_id")["broad_sector"]
+                .to_dict()
+            )
+            c_df["sector_id"] = c_df["company_id"].map(
+                lambda cid: str(sec_map.get(cid, "")).strip().upper().replace(" ", "_").replace("&", "AND")
+                if sec_map.get(cid) else None
+            )
         results["companies"] = load_companies(conn, c_df)
     except Exception as exc:
         logger.error("companies load failed: %s", exc)
         results["companies"] = 0
 
-    # --- core financial tables (header=1) ---
-    for file_name, table_name in [
-        ("balance_sheet", "balance_sheet"),
-        ("income_statement", "income_statement"),
-        ("cash_flow", "cash_flow"),
-        ("ratios", "ratios"),
-        ("prices", "prices"),
-        ("market_cap", "market_cap"),
-    ]:
+    # --- core financial tables (source file name != table name) ---
+    CORE_TABLE_FILE_MAP = {
+        "balance_sheet": "balancesheet",
+        "income_statement": "profitandloss",
+        "cash_flow": "cashflow",
+    }
+    for table_name, file_name in CORE_TABLE_FILE_MAP.items():
         try:
             df = load_core_file(file_name)
             df = normalise_company_id(df)
@@ -455,21 +463,30 @@ def run_full_load(
             logger.error("%s load failed: %s", table_name, exc)
             results[table_name] = 0
 
-    # --- supporting financial tables (header=0) ---
-    for file_name, table_name in [
-        ("shareholding", "shareholding"),
-        ("dividends", "dividends"),
-    ]:
+    # --- supporting financial tables (source file name != table name) ---
+    SUPPORT_TABLE_FILE_MAP = {
+        "ratios": "financial_ratios",
+        "prices": "stock_prices",
+        "market_cap": "market_cap",
+    }
+    for table_name, file_name in SUPPORT_TABLE_FILE_MAP.items():
         try:
             df = load_support_file(file_name)
             df = normalise_company_id(df)
-            df = normalise_year_column(df)
+            if table_name == "prices" and "year" not in df.columns and "date" in df.columns:
+                dt = pd.to_datetime(df["date"])
+                df["year"] = dt.dt.year.astype(str) + "-" + dt.dt.month.astype(str).str.zfill(2)
+            else:
+                df = normalise_year_column(df)
             results[table_name] = load_financial_table(
                 conn, df, table_name, FINANCIAL_TABLES[table_name]
             )
         except Exception as exc:
             logger.error("%s load failed: %s", table_name, exc)
             results[table_name] = 0
+
+    for table_name in ("shareholding", "dividends"):
+        results[table_name] = 0
 
     conn.close()
     logger.info("Full load complete → %s", results)
