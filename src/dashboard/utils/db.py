@@ -377,3 +377,22 @@ def get_pros_cons(ticker: str) -> pd.DataFrame:
         df = pd.DataFrame(columns=["item", "sentiment"])
     conn.close()
     return df
+
+
+# ── 11. Valuation (populated on Day 26) ────────────────────────────
+
+@st.cache_data(ttl=600)
+def get_all_valuations(year: str) -> pd.DataFrame:
+    """Return valuation estimates for all companies in a given year."""
+    conn = _get_conn()
+    try:
+        df = pd.read_sql_query(
+            "SELECT * FROM valuation WHERE year LIKE ?",
+            conn,
+            params=(f"{year}%",),
+        )
+    except Exception:
+        df = pd.DataFrame()
+    finally:
+        conn.close()
+    return df
