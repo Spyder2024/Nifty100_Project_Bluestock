@@ -13,6 +13,7 @@ Sprint 2, Day 11 — 10 tests covering:
   10. Capital Allocation — Distress Signal (-,+,+)
 """
 
+import pandas as pd
 import pytest
 
 from src.analytics.cashflow_kpis import (
@@ -22,6 +23,8 @@ from src.analytics.cashflow_kpis import (
     fcf_conversion_rate,
     free_cash_flow,
     generate_capital_allocation_csv,
+    generate_pattern_changes,
+    get_pattern_distribution,
 )
 
 
@@ -141,3 +144,43 @@ class TestGenerateCsv:
         assert "pattern_label" in header
         assert len(data) == 1
         assert data[0]["pattern_label"] == "Shareholder Returns"
+
+
+# ── Pattern Distribution ───────────────────────────────────────────────
+
+class TestPatternDistribution:
+
+    def test_distribution_calculation(self):
+        df = pd.DataFrame([
+            {"company_id": "A", "year": "2023-03", "pattern_label": "Reinvestor"},
+            {"company_id": "A", "year": "2024-03", "pattern_label": "Shareholder Returns"},
+            {"company_id": "B", "year": "2024-03", "pattern_label": "Reinvestor"},
+        ])
+        dist = get_pattern_distribution(df, latest_only=True)
+        assert "pattern_label" in dist.columns
+        assert "count" in dist.columns
+        assert "percentage" in dist.columns
+        
+        counts = dict(zip(dist["pattern_label"], dist["count"]))
+        assert counts["Shareholder Returns"] == 1
+        assert counts["Reinvestor"] == 1
+
+
+# ── Pattern Changes YoY ────────────────────────────────────────────────
+
+class TestPatternChanges:
+
+    def test_detects_yoy_changes(self, tmp_path):
+        csv_path = tmp_path / "pattern_changes.csv"
+        df = pd.DataFrame([
+            {"company_id": "TCS", "year": "2022-03", "pattern_label": "Reinvestor"},
+            {"company_id": "TCS", "year": "2023-03", "pattern_label": "Distress Signal"},
+            {"company_id": "INFY", "year": "2022-03", "pattern_label": "Reinvestor"},
+            {"company_id": "INFY", "year": "2023-03", "pattern_label": "Reinvestor"},
+        ])
+        res = generate_pattern_changes(df, output_path=csv_path)
+        assert len(res) == 1
+        assert res.iloc[0]["company_id"] == "TCS"
+        assert res.iloc[0]["from_pattern"] == "Reinvestor"
+        assert res.iloc[0]["to_pattern"] == "Distress Signal"
+        assert csv_path.exists()

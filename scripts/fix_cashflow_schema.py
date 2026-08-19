@@ -105,6 +105,8 @@ for row in ws.iter_rows(min_row=3, values_only=True):
         continue
 
     company = normalize_ticker(str(raw_company))
+    if company == "AGTL":
+        company = "ATGL"
     year = normalize_year(str(raw_year))
     if company is None or year is None:
         continue
