@@ -1,6 +1,6 @@
 """src/reports/tearsheet.py — 2-Page Company Financial Tearsheet Generator.
 
-Sprint 5, Day 33
+Sprint 5, Day 33–34
 
 Features:
     - Page 1: Navy header, 6 KPI tiles (2x3), 10-yr Revenue/Net Profit dual bar chart,
@@ -9,6 +9,8 @@ Features:
               Pros (green bullets) and Cons (red bullets) sections.
     - Strict 2-page constraint with zero page overflow across all sectors.
     - Automatic wordwrap via Paragraph flowables for all text elements.
+    - Batch generation (Day 34): skips companies with < 3 years of data,
+      logs skipped tickers to output/skipped_tearsheets.csv.
 
 Usage:
     python -m src.reports.tearsheet --tickers TCS HDFCBANK RELIANCE SUNPHARMA TATASTEEL
@@ -213,12 +215,6 @@ def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> 
         conn,
         params=(ticker_clean,),
     )
-    if df_ratios.empty:
-        df_ratios = pd.read_sql_query(
-            "SELECT * FROM financial_ratios WHERE company_id = ? ORDER BY year ASC",
-            conn,
-            params=(ticker_clean,),
-        )
     if not df_ratios.empty:
         df_ratios = df_ratios.tail(10).reset_index(drop=True)
 
@@ -838,27 +834,94 @@ def generate_tearsheet(ticker: str, output_dir: Path = DEFAULT_OUTPUT_DIR, db_pa
     return build_tearsheet_pdf(data, out_pdf)
 
 
+SKIPPED_CSV = PROJECT_ROOT / "output" / "skipped_tearsheets.csv"
+
+
+def _count_data_years(conn: sqlite3.Connection, company_id: str) -> tuple[int, int, int]:
+    """Return (income_statement_years, balance_sheet_years, cash_flow_years) for company."""
+    is_yrs = conn.execute(
+        "SELECT COUNT(DISTINCT year) FROM income_statement WHERE company_id = ?",
+        (company_id,),
+    ).fetchone()[0]
+    bs_yrs = conn.execute(
+        "SELECT COUNT(DISTINCT year) FROM balance_sheet WHERE company_id = ?",
+        (company_id,),
+    ).fetchone()[0]
+    cf_yrs = conn.execute(
+        "SELECT COUNT(DISTINCT year) FROM cash_flow WHERE company_id = ?",
+        (company_id,),
+    ).fetchone()[0]
+    return is_yrs, bs_yrs, cf_yrs
+
+
 def generate_all_tearsheets(
     tickers: Optional[list[str]] = None,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     db_path: Path = DEFAULT_DB_PATH,
-) -> list[Path]:
-    """Generate tearsheets for specified list of tickers or all companies in DB."""
+    skipped_csv: Path = SKIPPED_CSV,
+    min_years: int = 3,
+) -> tuple[list[Path], list[dict]]:
+    """Generate tearsheets for all tickers, skipping those with < min_years of data.
+
+    Returns:
+        (generated_paths, skipped_rows) — list of successfully generated PDFs and
+        list of dicts describing skipped companies.
+    """
+    conn = sqlite3.connect(str(db_path))
     if not tickers:
-        conn = sqlite3.connect(str(db_path))
-        rows = conn.execute("SELECT company_id FROM companies ORDER BY company_id").fetchall()
-        conn.close()
-        tickers = [r[0] for r in rows]
+        rows = conn.execute("SELECT company_id, company_name FROM companies ORDER BY company_id").fetchall()
+    else:
+        rows = []
+        for t in tickers:
+            r = conn.execute(
+                "SELECT company_id, company_name FROM companies WHERE company_id = ?",
+                (t.strip().upper(),),
+            ).fetchone()
+            if r:
+                rows.append(r)
+            else:
+                rows.append((t.strip().upper(), t.strip().upper()))
 
     generated: list[Path] = []
-    for t in tickers:
-        try:
-            pdf_path = generate_tearsheet(t, output_dir=output_dir, db_path=db_path)
-            generated.append(pdf_path)
-        except Exception as exc:
-            logger.error("Failed generating tearsheet for %s: %s", t, exc)
+    skipped: list[dict] = []
 
-    return generated
+    for company_id, company_name in rows:
+        is_yrs, bs_yrs, cf_yrs = _count_data_years(conn, company_id)
+        data_years = min(is_yrs, cf_yrs)  # minimum usable years across key tables
+
+        # Skip condition: income_statement OR cash_flow has < min_years, or balance_sheet entirely missing
+        if is_yrs < min_years or cf_yrs < min_years or bs_yrs < 1:
+            reason = (
+                f"Insufficient data history: IS={is_yrs}yr, BS={bs_yrs}yr, CF={cf_yrs}yr "
+                f"(minimum required: {min_years}yr)"
+            )
+            logger.warning("SKIP %-12s — %s", company_id, reason)
+            skipped.append({
+                "company_id": company_id,
+                "company_name": company_name,
+                "data_years": data_years,
+                "reason": reason,
+            })
+            continue
+
+        try:
+            pdf_path = generate_tearsheet(company_id, output_dir=output_dir, db_path=db_path)
+            generated.append(pdf_path)
+            logger.info("Generated: %s", pdf_path.name)
+        except Exception as exc:
+            logger.error("Failed generating tearsheet for %s: %s", company_id, exc)
+
+    conn.close()
+
+    # Write skipped log only when skipped list is non-empty OR this was a full-run (tickers=None)
+    if skipped:
+        skipped_csv.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(skipped, columns=["company_id", "company_name", "data_years", "reason"]).to_csv(
+            skipped_csv, index=False
+        )
+        logger.info("Skipped log written to: %s  (%d companies)", skipped_csv, len(skipped))
+
+    return generated, skipped
 
 
 def main():
@@ -886,17 +949,25 @@ def main():
     tickers_to_run = None if args.all else args.tickers
 
     print("=" * 70)
-    print("Day 33 — 2-Page Company Financial Tearsheet Generator")
+    print("Day 34 — Batch Company Financial Tearsheet Generator")
     print("=" * 70)
     print(f"[INFO] Output Directory: {out_dir}")
 
-    results = generate_all_tearsheets(tickers=tickers_to_run, output_dir=out_dir)
+    results, skipped = generate_all_tearsheets(tickers=tickers_to_run, output_dir=out_dir)
 
     print(f"\n[SUMMARY] Successfully generated {len(results)} tearsheets in {out_dir}")
     for p in results[:10]:
         print(f"  • {p.name}")
     if len(results) > 10:
         print(f"  ... and {len(results) - 10} more.")
+
+    if skipped:
+        print(f"\n[SKIPPED] {len(skipped)} companies skipped (< 3 years data):")
+        for s in skipped:
+            print(f"  [SKIP] {s['company_id']:12s} -- {s['reason']}")
+        print(f"  [LOG]  Written to: {SKIPPED_CSV}")
+
+    print(f"\n[TOTAL] Generated={len(results)}, Skipped={len(skipped)}, Total={len(results) + len(skipped)}")
 
 
 if __name__ == "__main__":

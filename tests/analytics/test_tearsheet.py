@@ -81,8 +81,9 @@ class TestTearsheetPDFGeneration:
         assert pages == 2, f"{ticker} PDF generated {pages} pages instead of 2"
 
     def test_generate_all_tearsheets_subset(self, tmp_path):
-        results = generate_all_tearsheets(tickers=["TCS", "RELIANCE"], output_dir=tmp_path)
-        assert len(results) == 2
-        for r in results:
+        generated, skipped = generate_all_tearsheets(tickers=["TCS", "RELIANCE"], output_dir=tmp_path)
+        assert len(generated) == 2
+        for r in generated:
             assert r.exists()
             assert _get_pdf_page_count(r) == 2
+
