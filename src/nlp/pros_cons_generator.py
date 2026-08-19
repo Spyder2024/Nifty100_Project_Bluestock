@@ -295,10 +295,22 @@ def load_data() -> tuple[
         for cid, grp in df.groupby(cid_col, dropna=False):
             groups[str(cid)] = grp.reset_index(drop=True)
 
+    # ── Ensure all companies from companies table are present ──────────────
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        comp_rows = conn.execute("SELECT company_id FROM companies").fetchall()
+        conn.close()
+        for (comp_id,) in comp_rows:
+            comp_id_str = str(comp_id)
+            if comp_id_str not in groups:
+                groups[comp_id_str] = pd.DataFrame([{cid_col: comp_id_str}])
+    except Exception:
+        pass
+
     print(f"  Companies loaded: {len(groups)}")
-    if year_col:
+    if year_col and groups:
         sample_cid = next(iter(groups))
-        years = groups[sample_cid][year_col].tolist()
+        years = groups[sample_cid].get(year_col, pd.Series()).tolist()
         print(f"  Sample years for {sample_cid}: {years[:5]}")
 
     return groups, cm, cid_col, year_col
@@ -700,7 +712,7 @@ ALL_RULES = [
 def _fallback_pro(cm: dict, d: pd.DataFrame, company_id: str) -> tuple:
     """Generate at least 1 pro when all rules fail."""
     qs_c = cm.get("composite_quality_score")
-    if qs_c:
+    if qs_c and qs_c in d.columns:
         qs = _f(d.iloc[0][qs_c])
         if qs is not None and qs > 0:
             qs_str = f"{qs:.1f}" if qs != int(qs) else str(int(qs))
@@ -716,7 +728,7 @@ def _fallback_pro(cm: dict, d: pd.DataFrame, company_id: str) -> tuple:
 def _fallback_con(cm: dict, d: pd.DataFrame) -> tuple:
     """Generate at least 1 con when all rules fail."""
     de_c = cm.get("debt_to_equity")
-    if de_c:
+    if de_c and de_c in d.columns:
         v = _f(d.iloc[0][de_c])
         if v is not None and v > 0:
             de_str = f"{v:.1f}" if v != int(v) else str(int(v))
@@ -807,7 +819,7 @@ def write_output(results: list[dict]) -> None:
         writer = csv.DictWriter(f, fieldnames=columns, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(results)
-    print(f"  [OK] {len(results)} rows → {path}")
+    print(f"  [OK] {len(results)} rows -> {path}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN

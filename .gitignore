@@ -44,3 +44,4 @@ Thumbs.db
 # Misc
 *.log
 *.tmp
+scripts/check_atgl.py

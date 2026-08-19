@@ -817,7 +817,7 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
 
     # Build Document with NumberedCanvas
     doc.build(story, canvasmaker=NumberedCanvas)
-    logger.info("Generated 2-page tearsheet for %s → %s", data["ticker"], output_pdf_path)
+    logger.info("Generated 2-page tearsheet for %s -> %s", data["ticker"], output_pdf_path)
     return output_pdf_path
 
 
@@ -859,9 +859,9 @@ def generate_all_tearsheets(
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     db_path: Path = DEFAULT_DB_PATH,
     skipped_csv: Path = SKIPPED_CSV,
-    min_years: int = 3,
+    min_years: int = 1,
 ) -> tuple[list[Path], list[dict]]:
-    """Generate tearsheets for all tickers, skipping those with < min_years of data.
+    """Generate tearsheets for all tickers.
 
     Returns:
         (generated_paths, skipped_rows) — list of successfully generated PDFs and
@@ -887,15 +887,15 @@ def generate_all_tearsheets(
 
     for company_id, company_name in rows:
         is_yrs, bs_yrs, cf_yrs = _count_data_years(conn, company_id)
-        data_years = min(is_yrs, cf_yrs)  # minimum usable years across key tables
+        data_years = max(is_yrs, cf_yrs, bs_yrs)
 
-        # Skip condition: income_statement OR cash_flow has < min_years, or balance_sheet entirely missing
-        if is_yrs < min_years or cf_yrs < min_years or bs_yrs < 1:
+        # Skip condition only if absolutely zero statement records exist across all statements
+        if is_yrs < min_years and cf_yrs < min_years and bs_yrs < min_years:
             reason = (
                 f"Insufficient data history: IS={is_yrs}yr, BS={bs_yrs}yr, CF={cf_yrs}yr "
                 f"(minimum required: {min_years}yr)"
             )
-            logger.warning("SKIP %-12s — %s", company_id, reason)
+            logger.warning("SKIP %-12s - %s", company_id, reason)
             skipped.append({
                 "company_id": company_id,
                 "company_name": company_name,
@@ -910,15 +910,21 @@ def generate_all_tearsheets(
             logger.info("Generated: %s", pdf_path.name)
         except Exception as exc:
             logger.error("Failed generating tearsheet for %s: %s", company_id, exc)
+            skipped.append({
+                "company_id": company_id,
+                "company_name": company_name,
+                "data_years": data_years,
+                "reason": str(exc),
+            })
 
     conn.close()
 
-    # Write skipped log only when skipped list is non-empty OR this was a full-run (tickers=None)
+    # Write skipped log
+    skipped_csv.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(skipped, columns=["company_id", "company_name", "data_years", "reason"]).to_csv(
+        skipped_csv, index=False
+    )
     if skipped:
-        skipped_csv.parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame(skipped, columns=["company_id", "company_name", "data_years", "reason"]).to_csv(
-            skipped_csv, index=False
-        )
         logger.info("Skipped log written to: %s  (%d companies)", skipped_csv, len(skipped))
 
     return generated, skipped
