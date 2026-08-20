@@ -17,8 +17,8 @@ import pytest
 
 from src.analytics.cagr import cagr, compute_all_cagrs, compute_cagr_window
 
-
 # ── Core formula + edge-case flags ─────────────────────────────────────
+
 
 class TestCagrFormula:
 
@@ -61,14 +61,21 @@ class TestCagrFormula:
 
 # ── Window-based computation ───────────────────────────────────────────
 
+
 class TestCagrWindow:
 
     def test_3yr_window(self):
         """10 years of data, 3-yr window → uses 2020 and 2023."""
         data = [
-            ("2014-03", 60.0), ("2015-03", 65.0), ("2016-03", 72.0),
-            ("2017-03", 80.0), ("2018-03", 88.0), ("2019-03", 95.0),
-            ("2020-03", 100.0), ("2021-03", 115.0), ("2022-03", 132.0),
+            ("2014-03", 60.0),
+            ("2015-03", 65.0),
+            ("2016-03", 72.0),
+            ("2017-03", 80.0),
+            ("2018-03", 88.0),
+            ("2019-03", 95.0),
+            ("2020-03", 100.0),
+            ("2021-03", 115.0),
+            ("2022-03", 132.0),
             ("2023-03", 150.0),
         ]
         val, flag = compute_cagr_window(data, 3)
@@ -79,8 +86,12 @@ class TestCagrWindow:
     def test_5yr_window_exact_match(self):
         """Start year exactly 5 years before end."""
         data = [
-            ("2018-03", 100.0), ("2019-03", 110.0), ("2020-03", 120.0),
-            ("2021-03", 135.0), ("2022-03", 142.0), ("2023-03", 150.0),
+            ("2018-03", 100.0),
+            ("2019-03", 110.0),
+            ("2020-03", 120.0),
+            ("2021-03", 135.0),
+            ("2022-03", 142.0),
+            ("2023-03", 150.0),
         ]
         val, flag = compute_cagr_window(data, 5)
         assert flag == ""
@@ -89,8 +100,11 @@ class TestCagrWindow:
     def test_10yr_window_insufficient(self):
         """Only 5 years of data but requesting 10-yr window."""
         data = [
-            ("2019-03", 80.0), ("2020-03", 90.0), ("2021-03", 105.0),
-            ("2022-03", 120.0), ("2023-03", 150.0),
+            ("2019-03", 80.0),
+            ("2020-03", 90.0),
+            ("2021-03", 105.0),
+            ("2022-03", 120.0),
+            ("2023-03", 150.0),
         ]
         val, flag = compute_cagr_window(data, 10)
         assert val is None
@@ -99,8 +113,12 @@ class TestCagrWindow:
     def test_none_values_filtered(self):
         """None entries are skipped; valid entries still produce CAGR."""
         data = [
-            ("2018-03", 100.0), ("2019-03", None), ("2020-03", None),
-            ("2021-03", 115.0), ("2022-03", 132.0), ("2023-03", 150.0),
+            ("2018-03", 100.0),
+            ("2019-03", None),
+            ("2020-03", None),
+            ("2021-03", 115.0),
+            ("2022-03", 132.0),
+            ("2023-03", 150.0),
         ]
         val, flag = compute_cagr_window(data, 3)
         # 2020 missing → falls back to 2018 (5 yr span)
@@ -110,11 +128,14 @@ class TestCagrWindow:
 
 # ── compute_all_cagrs convenience ──────────────────────────────────────
 
+
 class TestComputeAllCagrs:
 
     def test_returns_three_windows(self):
         data = [
-            ("2015-03", 70.0), ("2018-03", 100.0), ("2020-03", 100.0),
+            ("2015-03", 70.0),
+            ("2018-03", 100.0),
+            ("2020-03", 100.0),
             ("2023-03", 150.0),
         ]
         result = compute_all_cagrs(data)

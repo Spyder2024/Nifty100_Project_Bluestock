@@ -35,9 +35,7 @@ SCORE_FILLS = {
     "light_green": PatternFill(
         start_color="82E0AA", end_color="82E0AA", fill_type="solid"
     ),
-    "yellow": PatternFill(
-        start_color="F9E79F", end_color="F9E79F", fill_type="solid"
-    ),
+    "yellow": PatternFill(start_color="F9E79F", end_color="F9E79F", fill_type="solid"),
     "light_red": PatternFill(
         start_color="F1948A", end_color="F1948A", fill_type="solid"
     ),
@@ -46,9 +44,7 @@ SCORE_FILLS = {
     ),
 }
 
-HEADER_FILL = PatternFill(
-    start_color="2C3E50", end_color="2C3E50", fill_type="solid"
-)
+HEADER_FILL = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
 HEADER_FONT = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
 BODY_FONT = Font(name="Calibri", size=10)
 SCORE_FONT = Font(name="Calibri", size=10, bold=True)
@@ -95,10 +91,11 @@ SCORE_COLUMNS = [
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _score_fill(value) -> PatternFill:
     """Return a PatternFill based on the score quintile (0-100)."""
     if pd.isna(value):
-        return PatternFill()          # fill_type=None → no colour
+        return PatternFill()  # fill_type=None → no colour
     v = float(value)
     if v >= 80:
         return SCORE_FILLS["dark_green"]
@@ -168,6 +165,7 @@ def _write_df_to_sheet(ws, df: pd.DataFrame) -> None:
 
 
 # ── Main Export ───────────────────────────────────────────────────────────────
+
 
 def export_to_excel(
     df: pd.DataFrame,

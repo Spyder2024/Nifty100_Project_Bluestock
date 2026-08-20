@@ -54,12 +54,10 @@ def populated_db(db_conn):
         "VALUES ('TCS','2023-03', 240000)"
     )
     db_conn.execute(
-        "INSERT INTO ratios (company_id, year, roe) "
-        "VALUES ('INFY','2023-03', 32.5)"
+        "INSERT INTO ratios (company_id, year, roe) " "VALUES ('INFY','2023-03', 32.5)"
     )
     db_conn.execute(
-        "INSERT INTO ratios (company_id, year, roe) "
-        "VALUES ('INFY','2022-03', 30.1)"
+        "INSERT INTO ratios (company_id, year, roe) " "VALUES ('INFY','2022-03', 30.1)"
     )
     return db_conn
 
@@ -67,6 +65,7 @@ def populated_db(db_conn):
 # ==================================================================
 # 1. Audit status helper
 # ==================================================================
+
 
 class TestAuditStatus:
     """Test the _audit_status logic."""
@@ -91,21 +90,24 @@ class TestAuditStatus:
 # 2. Audit CSV output
 # ==================================================================
 
+
 class TestAuditCsv:
     """Test _write_audit_csv file output."""
 
     def test_writes_all_columns(self, tmp_path):
-        records = [{
-            "table_name": "companies",
-            "source_file": "companies.xlsx",
-            "source_type": "core",
-            "rows_loaded": 92,
-            "rows_skipped": 0,
-            "total_rows_in_source": 92,
-            "load_status": "SUCCESS",
-            "error_message": "",
-            "load_timestamp": "2026-07-20 10:00:00 UTC",
-        }]
+        records = [
+            {
+                "table_name": "companies",
+                "source_file": "companies.xlsx",
+                "source_type": "core",
+                "rows_loaded": 92,
+                "rows_skipped": 0,
+                "total_rows_in_source": 92,
+                "load_status": "SUCCESS",
+                "error_message": "",
+                "load_timestamp": "2026-07-20 10:00:00 UTC",
+            }
+        ]
         out = str(tmp_path / "audit.csv")
         _write_audit_csv(records, out)
 
@@ -135,16 +137,26 @@ class TestAuditCsv:
     def test_multiple_records(self, tmp_path):
         records = [
             dict(
-                table_name="sectors", source_file="sectors.xlsx",
-                source_type="supporting", rows_loaded=10, rows_skipped=0,
-                total_rows_in_source=10, load_status="SUCCESS",
-                error_message="", load_timestamp="2026-07-20 10:00:00 UTC",
+                table_name="sectors",
+                source_file="sectors.xlsx",
+                source_type="supporting",
+                rows_loaded=10,
+                rows_skipped=0,
+                total_rows_in_source=10,
+                load_status="SUCCESS",
+                error_message="",
+                load_timestamp="2026-07-20 10:00:00 UTC",
             ),
             dict(
-                table_name="companies", source_file="companies.xlsx",
-                source_type="core", rows_loaded=90, rows_skipped=2,
-                total_rows_in_source=92, load_status="PARTIAL",
-                error_message="", load_timestamp="2026-07-20 10:00:00 UTC",
+                table_name="companies",
+                source_file="companies.xlsx",
+                source_type="core",
+                rows_loaded=90,
+                rows_skipped=2,
+                total_rows_in_source=92,
+                load_status="PARTIAL",
+                error_message="",
+                load_timestamp="2026-07-20 10:00:00 UTC",
             ),
         ]
         out = str(tmp_path / "audit.csv")
@@ -159,15 +171,16 @@ class TestAuditCsv:
 # 3. FK integrity check
 # ==================================================================
 
+
 class TestFkIntegrity:
     """Test the check_fk_integrity function."""
 
     def test_clean_data_zero_orphans(self, populated_db):
         results = check_fk_integrity(populated_db)
         for r in results:
-            assert r["orphan_count"] == 0, (
-                f"{r['fk_table']}.{r['fk_column']} has {r['orphan_count']} orphans"
-            )
+            assert (
+                r["orphan_count"] == 0
+            ), f"{r['fk_table']}.{r['fk_column']} has {r['orphan_count']} orphans"
 
     def test_nine_fk_checks_total(self, db_conn):
         """1 (companies→sectors) + 8 (financial→companies) = 9."""
@@ -176,7 +189,13 @@ class TestFkIntegrity:
 
     def test_result_dict_keys(self, populated_db):
         results = check_fk_integrity(populated_db)
-        expected_keys = {"fk_table", "fk_column", "ref_table", "ref_column", "orphan_count"}
+        expected_keys = {
+            "fk_table",
+            "fk_column",
+            "ref_table",
+            "ref_column",
+            "orphan_count",
+        }
         for r in results:
             assert expected_keys.issubset(r.keys())
 
@@ -191,6 +210,7 @@ class TestFkIntegrity:
 # ==================================================================
 # 4. Table row counts
 # ==================================================================
+
 
 class TestTableRowCounts:
     """Test get_table_row_counts function."""
@@ -217,8 +237,15 @@ class TestTableRowCounts:
     def test_covers_all_ten_tables(self, db_conn):
         counts = get_table_row_counts(db_conn)
         expected = {
-            "sectors", "companies", "balance_sheet", "income_statement",
-            "cash_flow", "ratios", "prices", "market_cap",
-            "shareholding", "dividends",
+            "sectors",
+            "companies",
+            "balance_sheet",
+            "income_statement",
+            "cash_flow",
+            "ratios",
+            "prices",
+            "market_cap",
+            "shareholding",
+            "dividends",
         }
         assert set(counts.keys()) == expected

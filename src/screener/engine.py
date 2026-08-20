@@ -20,17 +20,30 @@ import yaml
 from .scoring import compute_composite_score as _winsorised_composite_score
 
 # Default config path
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "screener_config.yaml"
+DEFAULT_CONFIG_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "config" / "screener_config.yaml"
+)
 
 # Columns that indicate sector identity
 SECTOR_COLUMNS = ["broad_sector", "sector_id", "sector"]
 
 # All 15 filterable metric column names
 FILTERABLE_COLUMNS = {
-    "roe", "debt_to_equity", "free_cash_flow",
-    "revenue_cagr_5yr", "pat_cagr_5yr", "operating_profit_margin",
-    "pe_ratio", "pb_ratio", "dividend_yield", "interest_coverage_ratio",
-    "market_cap", "net_profit", "eps_cagr_5yr", "asset_turnover", "net_sales",
+    "roe",
+    "debt_to_equity",
+    "free_cash_flow",
+    "revenue_cagr_5yr",
+    "pat_cagr_5yr",
+    "operating_profit_margin",
+    "pe_ratio",
+    "pb_ratio",
+    "dividend_yield",
+    "interest_coverage_ratio",
+    "market_cap",
+    "net_profit",
+    "eps_cagr_5yr",
+    "asset_turnover",
+    "net_sales",
 }
 
 # Dividend payout ratio — used by Dividend Champion preset
@@ -62,9 +75,7 @@ class FilterEngine:
     def _load_config(self) -> None:
         """Load and parse screener_config.yaml."""
         if not self.config_path.exists():
-            raise FileNotFoundError(
-                f"Screener config not found: {self.config_path}"
-            )
+            raise FileNotFoundError(f"Screener config not found: {self.config_path}")
         with open(self.config_path, "r", encoding="utf-8") as fh:
             self._raw = yaml.safe_load(fh)
 
@@ -88,8 +99,7 @@ class FilterEngine:
         """
         if name not in self.presets:
             raise KeyError(
-                f"Preset '{name}' not found. "
-                f"Available: {list(self.presets.keys())}"
+                f"Preset '{name}' not found. " f"Available: {list(self.presets.keys())}"
             )
         preset_def = self.presets[name]
         result: dict[str, float] = {}
@@ -141,10 +151,7 @@ class FilterEngine:
         """Check if a single sector string is a financial sector."""
         if sector is None:
             return False
-        return any(
-            fs.lower() == sector.lower()
-            for fs in self.financial_sectors
-        )
+        return any(fs.lower() == sector.lower() for fs in self.financial_sectors)
 
     # ------------------------------------------------------------------
     # Composite quality score (basic version — Day 17 enhances this)
@@ -158,7 +165,9 @@ class FilterEngine:
         return pd.to_numeric(df[col], errors="coerce")
 
     @classmethod
-    def compute_composite_score(cls, df: pd.DataFrame, sector_col: str = "sector") -> pd.Series:
+    def compute_composite_score(
+        cls, df: pd.DataFrame, sector_col: str = "sector"
+    ) -> pd.Series:
         """P10/P90 winsorised sector-relative composite score.
 
         Replaces the basic linear scoring (Day 15) with sector-relative
@@ -315,7 +324,7 @@ class FilterEngine:
         question that applies to ALL sectors including Financials.
         """
         # D/E=0 (debt-free check) applies to ALL sectors -- no skip
-        is_debt_free_check = (direction == "max" and threshold == 0.0)
+        is_debt_free_check = direction == "max" and threshold == 0.0
         is_financial = df.apply(self._is_any_financial_sector, axis=1)
 
         # Only skip Financials when it is NOT a debt-free check
@@ -347,10 +356,7 @@ class FilterEngine:
         Companies marked as debt-free (is_debt_free == 1 or D/E == 0)
         always pass any ICR minimum threshold.
         """
-        is_debt_free = (
-            (df.get("is_debt_free") == 1)
-            | (df.get("debt_to_equity") == 0)
-        )
+        is_debt_free = (df.get("is_debt_free") == 1) | (df.get("debt_to_equity") == 0)
 
         mask = pd.Series(True, index=df.index)
 
@@ -394,14 +400,16 @@ class FilterEngine:
         """Return list of available filter definitions."""
         result = []
         for name, fdef in self.filters.items():
-            result.append({
-                "name": name,
-                "column": fdef["column"],
-                "display_name": fdef.get("display_name", name),
-                "direction": fdef["direction"],
-                "default": fdef.get("default"),
-                "unit": fdef.get("unit", ""),
-            })
+            result.append(
+                {
+                    "name": name,
+                    "column": fdef["column"],
+                    "display_name": fdef.get("display_name", name),
+                    "direction": fdef["direction"],
+                    "default": fdef.get("default"),
+                    "unit": fdef.get("unit", ""),
+                }
+            )
         return result
 
 

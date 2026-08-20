@@ -55,12 +55,14 @@ def export_postman_collection(
             query_params = []
             for p in details.get("parameters", []):
                 if p.get("in") == "query":
-                    query_params.append({
-                        "key": p.get("name"),
-                        "value": str(p.get("schema", {}).get("default", "")),
-                        "description": p.get("description", ""),
-                        "disabled": not p.get("required", False),
-                    })
+                    query_params.append(
+                        {
+                            "key": p.get("name"),
+                            "value": str(p.get("schema", {}).get("default", "")),
+                            "description": p.get("description", ""),
+                            "disabled": not p.get("required", False),
+                        }
+                    )
 
             # Format path for Postman URL
             clean_path = path.lstrip("/")
@@ -84,10 +86,12 @@ def export_postman_collection(
                 "response": [],
             }
 
-            items.append({
-                "tag": tags[0] if tags else "General",
-                "item": postman_item,
-            })
+            items.append(
+                {
+                    "tag": tags[0] if tags else "General",
+                    "item": postman_item,
+                }
+            )
 
     # Group items by tag / folder
     folders_map: Dict[str, List[Dict[str, Any]]] = {}
@@ -98,8 +102,7 @@ def export_postman_collection(
         folders_map[tag].append(entry["item"])
 
     postman_folders = [
-        {"name": tag, "item": folder_items}
-        for tag, folder_items in folders_map.items()
+        {"name": tag, "item": folder_items} for tag, folder_items in folders_map.items()
     ]
 
     collection = {
@@ -133,7 +136,9 @@ def main():
     print("Day 40 — Documentation & Postman Collection Exporter")
     print("=" * 65)
     print(f"  • OpenAPI Spec:     {openapi_file} ({openapi_file.stat().st_size} bytes)")
-    print(f"  • Postman Collection: {postman_file} ({postman_file.stat().st_size} bytes)")
+    print(
+        f"  • Postman Collection: {postman_file} ({postman_file.stat().st_size} bytes)"
+    )
 
 
 if __name__ == "__main__":

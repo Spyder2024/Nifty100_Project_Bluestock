@@ -15,30 +15,29 @@ Usage:
 from __future__ import annotations
 
 import sqlite3
-from typing import Optional
 
 import numpy as np
 import pandas as pd
-
 
 # ═══════════════════════════════════════════════════════════════════════
 #  Constants (Indian-market defaults)
 # ═══════════════════════════════════════════════════════════════════════
 
-DEFAULT_WACC = 0.12            # 12 % typical for large-cap Indian equities
+DEFAULT_WACC = 0.12  # 12 % typical for large-cap Indian equities
 DEFAULT_TERMINAL_GROWTH = 0.05  # 5 %  long-term GDP-adjacent
 DEFAULT_DDM_RETURN = 0.12
 PROJECTION_YEARS = 10
-FACE_VALUE = 10.0               # ₹10 standard face value
+FACE_VALUE = 10.0  # ₹10 standard face value
 
 
 # ═══════════════════════════════════════════════════════════════════════
 #  Helpers
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def _f(val) -> float | None:
     """Coerce *val* to plain Python float or ``None``.
-    
+
     Shields against PyArrow scalars, pandas NA, and infinity
     that break numpy / math operations.
     """
@@ -55,6 +54,7 @@ def _f(val) -> float | None:
 #  1. Graham Number
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def graham_number(eps: float | None, bvps: float | None) -> float | None:
     """Graham Number = √(22.5 × EPS × BVPS).
 
@@ -69,6 +69,7 @@ def graham_number(eps: float | None, bvps: float | None) -> float | None:
 # ═══════════════════════════════════════════════════════════════════════
 #  2. DCF (two-stage, FCF-based)
 # ═══════════════════════════════════════════════════════════════════════
+
 
 def _empty_dcf() -> dict:
     return {
@@ -142,6 +143,7 @@ def dcf_valuation(
 #  3. DDM (Gordon Growth Model)
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def ddm_valuation(
     dps: float | None,
     growth_rate: float,
@@ -160,6 +162,7 @@ def ddm_valuation(
 # ═══════════════════════════════════════════════════════════════════════
 #  4. Relative Valuation (sector-median multiples)
 # ═══════════════════════════════════════════════════════════════════════
+
 
 def relative_valuation(
     eps: float | None,
@@ -194,6 +197,7 @@ def relative_valuation(
 #  DB layer
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def create_valuation_table(conn: sqlite3.Connection) -> None:
     conn.execute("""
         CREATE TABLE IF NOT EXISTS valuation (
@@ -219,10 +223,21 @@ def create_valuation_table(conn: sqlite3.Connection) -> None:
 
 
 VALUATION_WRITE_COLS = [
-    "company_id", "year", "graham_number", "dcf_intrinsic_value",
-    "ddm_intrinsic_value", "relative_pe_value", "relative_pb_value",
-    "relative_avg_value", "sector_median_pe", "sector_median_pb",
-    "fcf_used", "growth_rate_used", "wacc_used", "eps_used", "bvps_used",
+    "company_id",
+    "year",
+    "graham_number",
+    "dcf_intrinsic_value",
+    "ddm_intrinsic_value",
+    "relative_pe_value",
+    "relative_pb_value",
+    "relative_avg_value",
+    "sector_median_pe",
+    "sector_median_pb",
+    "fcf_used",
+    "growth_rate_used",
+    "wacc_used",
+    "eps_used",
+    "bvps_used",
 ]
 
 
@@ -246,14 +261,18 @@ def compute_all_valuations(
 
     if has_fr:
         ratio_tbl = "financial_ratios"
-        fr_cols = "company_id, company_name, year, pe_ratio, price_to_book, " \
-                  "book_value_per_share, dividend_payout, " \
-                  "revenue_cagr_5yr, net_profit_cagr_5yr, broad_sector"
+        fr_cols = (
+            "company_id, company_name, year, pe_ratio, price_to_book, "
+            "book_value_per_share, dividend_payout, "
+            "revenue_cagr_5yr, net_profit_cagr_5yr, broad_sector"
+        )
     else:
         ratio_tbl = "ratios"
-        fr_cols = "company_id, year, pe_ratio, price_to_book, " \
-                  "book_value_per_share, dividend_payout, " \
-                  "revenue_cagr_5yr, net_profit_cagr_5yr"
+        fr_cols = (
+            "company_id, year, pe_ratio, price_to_book, "
+            "book_value_per_share, dividend_payout, "
+            "revenue_cagr_5yr, net_profit_cagr_5yr"
+        )
 
     # ── Build joined dataset ─────────────────────────────────────────
     query = f"""
@@ -279,8 +298,10 @@ def compute_all_valuations(
     if "broad_sector" in fr.columns:
         sector_med_df = (
             fr.groupby(["year", "broad_sector"])
-            .agg(sector_median_pe=("pe_ratio", "median"),
-                 sector_median_pb=("price_to_book", "median"))
+            .agg(
+                sector_median_pe=("pe_ratio", "median"),
+                sector_median_pb=("price_to_book", "median"),
+            )
             .reset_index()
         )
 
@@ -383,38 +404,37 @@ def compute_all_valuations(
 
         rel = relative_valuation(eps, bvps, s_pe, s_pb)
 
-        records.append({
-            "company_id": ticker,
-            "year": yr,
-            "graham_number": gn,
-            "dcf_intrinsic_value": dcf["intrinsic_value_per_share"],
-            "ddm_intrinsic_value": ddm,
-            "relative_pe_value": rel["pe_based_value"],
-            "relative_pb_value": rel["pb_based_value"],
-            "relative_avg_value": rel["average_relative_value"],
-            "sector_median_pe": s_pe,
-            "sector_median_pb": s_pb,
-            "fcf_used": fcf_val,
-            "growth_rate_used": round(growth_decimal * 100, 2),
-            "wacc_used": wacc,
-            "eps_used": eps,
-            "bvps_used": bvps,
-        })
+        records.append(
+            {
+                "company_id": ticker,
+                "year": yr,
+                "graham_number": gn,
+                "dcf_intrinsic_value": dcf["intrinsic_value_per_share"],
+                "ddm_intrinsic_value": ddm,
+                "relative_pe_value": rel["pe_based_value"],
+                "relative_pb_value": rel["pb_based_value"],
+                "relative_avg_value": rel["average_relative_value"],
+                "sector_median_pe": s_pe,
+                "sector_median_pb": s_pb,
+                "fcf_used": fcf_val,
+                "growth_rate_used": round(growth_decimal * 100, 2),
+                "wacc_used": wacc,
+                "eps_used": eps,
+                "bvps_used": bvps,
+            }
+        )
 
     # ── Persist ────────────────────────────────────────────────────
     create_valuation_table(conn)
 
     if year:
-        conn.execute("DELETE FROM valuation WHERE year LIKE ?",
-                      (f"{year}%",))
+        conn.execute("DELETE FROM valuation WHERE year LIKE ?", (f"{year}%",))
     else:
         conn.execute("DELETE FROM valuation")
 
     val_df = pd.DataFrame(records)
     write_cols = [c for c in VALUATION_WRITE_COLS if c in val_df.columns]
-    val_df[write_cols].to_sql(
-        "valuation", conn, if_exists="append", index=False
-    )
+    val_df[write_cols].to_sql("valuation", conn, if_exists="append", index=False)
     conn.commit()
 
     return len(val_df)
@@ -423,6 +443,7 @@ def compute_all_valuations(
 # ═══════════════════════════════════════════════════════════════════════
 #  Query helpers
 # ═══════════════════════════════════════════════════════════════════════
+
 
 def load_valuations(
     conn: sqlite3.Connection,
@@ -443,5 +464,6 @@ def load_valuations(
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     return pd.read_sql_query(
         f"SELECT * FROM valuation{where} ORDER BY company_id, year",
-        conn, params=params,
+        conn,
+        params=params,
     )

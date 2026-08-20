@@ -42,16 +42,16 @@ if "company_name" not in working.columns:
 #   "min" → slider sets the lower bound  (company passes if value >= threshold)
 #   "max" → slider sets the upper bound  (company passes if value <= threshold)
 METRIC_DEFS: list[tuple[str, str, str]] = [
-    ("roe",               "ROE (%)",               "min"),
-    ("roce",              "ROCE (%)",              "min"),
+    ("roe", "ROE (%)", "min"),
+    ("roce", "ROCE (%)", "min"),
     ("net_profit_margin", "Net Profit Margin (%)", "min"),
-    ("debt_to_equity",    "Debt-to-Equity",        "max"),
-    ("pe_ratio",          "P/E Ratio",             "max"),
-    ("price_to_book",     "P/B Ratio",             "max"),
-    ("current_ratio",     "Current Ratio",         "min"),
-    ("revenue_cagr_5yr",  "Revenue CAGR 5Y (%)",   "min"),
-    ("dividend_payout",   "Dividend Payout (%)",   "min"),
-    ("earning_yield",     "Earning Yield (%)",     "min"),
+    ("debt_to_equity", "Debt-to-Equity", "max"),
+    ("pe_ratio", "P/E Ratio", "max"),
+    ("price_to_book", "P/B Ratio", "max"),
+    ("current_ratio", "Current Ratio", "min"),
+    ("revenue_cagr_5yr", "Revenue CAGR 5Y (%)", "min"),
+    ("dividend_payout", "Dividend Payout (%)", "min"),
+    ("earning_yield", "Earning Yield (%)", "min"),
 ]
 
 # ── Presets ─────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ def _slider_range(series: pd.Series, pad: float = 0.10) -> tuple[float, float]:
     if valid.empty:
         return 0.0, 100.0
     lo, hi = float(valid.min()), float(valid.max())
-    if lo == hi:                       # constant column edge-case
+    if lo == hi:  # constant column edge-case
         return round(lo - 1.0, 2), round(hi + 1.0, 2)
     margin = (hi - lo) * pad
     return round(lo - margin, 2), round(hi + margin, 2)
@@ -197,9 +197,7 @@ DISPLAY_COLS = [
 
 available_cols = [c for c in DISPLAY_COLS if c in filtered.columns]
 
-sort_col = st.selectbox(
-    "Sort by", available_cols, index=0, key="scr_sort"
-)
+sort_col = st.selectbox("Sort by", available_cols, index=0, key="scr_sort")
 ascending = st.checkbox("Ascending", value=False, key="scr_asc")
 
 result = filtered[available_cols].sort_values(

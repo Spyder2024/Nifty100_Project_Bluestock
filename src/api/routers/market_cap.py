@@ -9,7 +9,7 @@ Endpoints:
 from __future__ import annotations
 
 import sqlite3
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
 
@@ -99,14 +99,16 @@ async def get_historical_multiples(ticker: str) -> Dict[str, Any]:
             if mcap and mcap > 0 and div > 0:
                 div_yield = round((div / mcap) * 100.0, 2)
 
-            multiples.append({
-                "year": yr,
-                "market_cap_cr": round(mcap, 2) if mcap is not None else None,
-                "pe_ratio": round(pe, 2) if pe is not None else None,
-                "pb_ratio": round(pb, 2) if pb is not None else None,
-                "ev_ebitda": round(ev_ebitda, 2) if ev_ebitda is not None else None,
-                "dividend_yield_pct": div_yield,
-            })
+            multiples.append(
+                {
+                    "year": yr,
+                    "market_cap_cr": round(mcap, 2) if mcap is not None else None,
+                    "pe_ratio": round(pe, 2) if pe is not None else None,
+                    "pb_ratio": round(pb, 2) if pb is not None else None,
+                    "ev_ebitda": round(ev_ebitda, 2) if ev_ebitda is not None else None,
+                    "dividend_yield_pct": div_yield,
+                }
+            )
 
         return {
             "company_id": cid,

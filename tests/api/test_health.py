@@ -10,7 +10,6 @@ Tests:
 """
 
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 

@@ -1,7 +1,6 @@
 """Tests for peer percentile ranking engine (Day 18)."""
 
 import sqlite3
-from textwrap import dedent
 
 import numpy as np
 import pandas as pd
@@ -23,16 +22,22 @@ from src.analytics.peer import (
     create_peer_table,
 )
 
-
 # ── Fixture column layout ─────────────────────────────────────────────────────
 
 _PEER_COLS = [
-    "company_name", "broad_sector", "year",
-    "return_on_equity", "return_on_capital_employed",
-    "net_profit_margin", "operating_profit_margin",
-    "cfo_quality_score", "operating_cash_flow_ratio",
-    "debt_to_equity", "interest_coverage_ratio",
-    "revenue_cagr_5yr", "net_profit_cagr_5yr",
+    "company_name",
+    "broad_sector",
+    "year",
+    "return_on_equity",
+    "return_on_capital_employed",
+    "net_profit_margin",
+    "operating_profit_margin",
+    "cfo_quality_score",
+    "operating_cash_flow_ratio",
+    "debt_to_equity",
+    "interest_coverage_ratio",
+    "revenue_cagr_5yr",
+    "net_profit_cagr_5yr",
 ]
 
 
@@ -46,27 +51,155 @@ def peer_df():
     """8 companies × 2 years × 10 metrics across 3 peer groups."""
     rows = [
         # IT — 2023
-        _row("TCS",      "IT",               2023, 15.0, 20.0, 18.0, 22.0, 0.85, 1.2, 0.1, 25.0,  8.0, 10.0),
-        _row("INFY",     "IT",               2023, 12.0, 16.0, 15.0, 19.0, 0.80, 1.0, 0.3, 20.0,  7.0,  8.0),
-        _row("WIPRO",    "IT",               2023,  8.0, 10.0, 10.0, 13.0, 0.65, 0.7, 0.2, 15.0,  4.0,  5.0),
+        _row(
+            "TCS", "IT", 2023, 15.0, 20.0, 18.0, 22.0, 0.85, 1.2, 0.1, 25.0, 8.0, 10.0
+        ),
+        _row(
+            "INFY", "IT", 2023, 12.0, 16.0, 15.0, 19.0, 0.80, 1.0, 0.3, 20.0, 7.0, 8.0
+        ),
+        _row(
+            "WIPRO", "IT", 2023, 8.0, 10.0, 10.0, 13.0, 0.65, 0.7, 0.2, 15.0, 4.0, 5.0
+        ),
         # IT — 2024
-        _row("TCS",      "IT",               2024, 16.0, 21.0, 19.0, 23.0, 0.87, 1.3, 0.1, 27.0,  9.0, 11.0),
-        _row("INFY",     "IT",               2024, 13.0, 17.0, 16.0, 20.0, 0.82, 1.1, 0.3, 21.0,  8.0,  9.0),
-        _row("WIPRO",    "IT",               2024,  9.0, 11.0, 11.0, 14.0, 0.67, 0.8, 0.2, 16.0,  5.0,  6.0),
+        _row(
+            "TCS", "IT", 2024, 16.0, 21.0, 19.0, 23.0, 0.87, 1.3, 0.1, 27.0, 9.0, 11.0
+        ),
+        _row(
+            "INFY", "IT", 2024, 13.0, 17.0, 16.0, 20.0, 0.82, 1.1, 0.3, 21.0, 8.0, 9.0
+        ),
+        _row(
+            "WIPRO", "IT", 2024, 9.0, 11.0, 11.0, 14.0, 0.67, 0.8, 0.2, 16.0, 5.0, 6.0
+        ),
         # Financial Services — 2023
-        _row("HDFCBANK", "Banks",            2023, 14.0,  0.0, 20.0, 25.0, 0.70, 0.0, 5.8,  2.5, 10.0, 12.0),
-        _row("SBIN",     "Banks",            2023, 10.0,  0.0, 12.0, 16.0, 0.55, 0.0, 4.2,  1.8,  8.0,  9.0),
-        _row("KOTAKBANK","NBFC",             2023, 11.0,  0.0, 14.0, 18.0, 0.60, 0.0, 3.5,  2.0,  9.0, 10.0),
+        _row(
+            "HDFCBANK",
+            "Banks",
+            2023,
+            14.0,
+            0.0,
+            20.0,
+            25.0,
+            0.70,
+            0.0,
+            5.8,
+            2.5,
+            10.0,
+            12.0,
+        ),
+        _row(
+            "SBIN", "Banks", 2023, 10.0, 0.0, 12.0, 16.0, 0.55, 0.0, 4.2, 1.8, 8.0, 9.0
+        ),
+        _row(
+            "KOTAKBANK",
+            "NBFC",
+            2023,
+            11.0,
+            0.0,
+            14.0,
+            18.0,
+            0.60,
+            0.0,
+            3.5,
+            2.0,
+            9.0,
+            10.0,
+        ),
         # Financial Services — 2024
-        _row("HDFCBANK", "Banks",            2024, 15.0,  0.0, 21.0, 26.0, 0.72, 0.0, 5.5,  2.8, 11.0, 13.0),
-        _row("SBIN",     "Banks",            2024, 11.0,  0.0, 13.0, 17.0, 0.58, 0.0, 4.0,  1.9,  9.0, 10.0),
-        _row("KOTAKBANK","NBFC",             2024, 12.0,  0.0, 15.0, 19.0, 0.63, 0.0, 3.2,  2.2, 10.0, 11.0),
+        _row(
+            "HDFCBANK",
+            "Banks",
+            2024,
+            15.0,
+            0.0,
+            21.0,
+            26.0,
+            0.72,
+            0.0,
+            5.5,
+            2.8,
+            11.0,
+            13.0,
+        ),
+        _row(
+            "SBIN", "Banks", 2024, 11.0, 0.0, 13.0, 17.0, 0.58, 0.0, 4.0, 1.9, 9.0, 10.0
+        ),
+        _row(
+            "KOTAKBANK",
+            "NBFC",
+            2024,
+            12.0,
+            0.0,
+            15.0,
+            19.0,
+            0.63,
+            0.0,
+            3.2,
+            2.2,
+            10.0,
+            11.0,
+        ),
         # FMCG — 2023
-        _row("HINDUNILVR","FMCG",            2023, 25.0, 30.0, 12.0, 16.0, 0.95, 1.5, 0.2, 30.0,  8.0, 10.0),
-        _row("ITC",      "Consumer Goods",   2023, 22.0, 28.0, 25.0, 28.0, 0.92, 1.3, 0.1, 25.0,  7.0,  8.0),
+        _row(
+            "HINDUNILVR",
+            "FMCG",
+            2023,
+            25.0,
+            30.0,
+            12.0,
+            16.0,
+            0.95,
+            1.5,
+            0.2,
+            30.0,
+            8.0,
+            10.0,
+        ),
+        _row(
+            "ITC",
+            "Consumer Goods",
+            2023,
+            22.0,
+            28.0,
+            25.0,
+            28.0,
+            0.92,
+            1.3,
+            0.1,
+            25.0,
+            7.0,
+            8.0,
+        ),
         # FMCG — 2024
-        _row("HINDUNILVR","FMCG",            2024, 26.0, 31.0, 13.0, 17.0, 0.96, 1.6, 0.2, 32.0,  9.0, 11.0),
-        _row("ITC",      "Consumer Goods",   2024, 23.0, 29.0, 26.0, 29.0, 0.93, 1.4, 0.1, 27.0,  8.0,  9.0),
+        _row(
+            "HINDUNILVR",
+            "FMCG",
+            2024,
+            26.0,
+            31.0,
+            13.0,
+            17.0,
+            0.96,
+            1.6,
+            0.2,
+            32.0,
+            9.0,
+            11.0,
+        ),
+        _row(
+            "ITC",
+            "Consumer Goods",
+            2024,
+            23.0,
+            29.0,
+            26.0,
+            29.0,
+            0.93,
+            1.4,
+            0.1,
+            27.0,
+            8.0,
+            9.0,
+        ),
     ]
     return pd.DataFrame(rows, columns=_PEER_COLS)
 
@@ -80,6 +213,7 @@ def db_conn():
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
+
 
 class TestConstants:
     def test_eleven_peer_groups(self):
@@ -101,16 +235,22 @@ class TestConstants:
     def test_peer_metrics_match_scoring(self):
         """PEER_METRICS should be a subset of what scoring.py uses."""
         expected = {
-            "return_on_equity", "return_on_capital_employed",
-            "net_profit_margin", "operating_profit_margin",
-            "cfo_quality_score", "operating_cash_flow_ratio",
-            "debt_to_equity", "interest_coverage_ratio",
-            "revenue_cagr_5yr", "net_profit_cagr_5yr",
+            "return_on_equity",
+            "return_on_capital_employed",
+            "net_profit_margin",
+            "operating_profit_margin",
+            "cfo_quality_score",
+            "operating_cash_flow_ratio",
+            "debt_to_equity",
+            "interest_coverage_ratio",
+            "revenue_cagr_5yr",
+            "net_profit_cagr_5yr",
         }
         assert set(PEER_METRICS) == expected
 
 
 # ── resolve_peer_group ───────────────────────────────────────────────────────
+
 
 class TestResolvePeerGroup:
     def test_maps_banks_to_financial_services(self):
@@ -133,13 +273,19 @@ class TestResolvePeerGroup:
 
 # ── compute_peer_percentiles ─────────────────────────────────────────────────
 
+
 class TestComputePeerPercentiles:
     def test_returns_long_format_dataframe(self, peer_df):
         result = compute_peer_percentiles(peer_df)
         assert isinstance(result, pd.DataFrame)
         expected_cols = {
-            "company_name", "year", "peer_group", "metric_name",
-            "raw_value", "percentile_rank", "peer_count",
+            "company_name",
+            "year",
+            "peer_group",
+            "metric_name",
+            "raw_value",
+            "percentile_rank",
+            "peer_count",
         }
         assert expected_cols.issubset(set(result.columns))
 
@@ -156,16 +302,12 @@ class TestComputePeerPercentiles:
     def test_peer_group_mapped_correctly(self, peer_df):
         result = compute_peer_percentiles(peer_df)
         # "Banks" → "Financial Services"
-        hdfs = result[
-            (result["company_name"] == "HDFCBANK") & (result["year"] == 2023)
-        ]
+        hdfs = result[(result["company_name"] == "HDFCBANK") & (result["year"] == 2023)]
         assert (hdfs["peer_group"] == "Financial Services").all()
 
     def test_consumer_goods_maps_to_fmcg(self, peer_df):
         result = compute_peer_percentiles(peer_df)
-        itc = result[
-            (result["company_name"] == "ITC") & (result["year"] == 2023)
-        ]
+        itc = result[(result["company_name"] == "ITC") & (result["year"] == 2023)]
         assert (itc["peer_group"] == "FMCG").all()
 
     def test_peer_count_reflects_group_size(self, peer_df):
@@ -188,6 +330,7 @@ class TestComputePeerPercentiles:
 
 # ── D/E Inversion ────────────────────────────────────────────────────────────
 
+
 class TestPeerInversion:
     def test_low_de_high_percentile(self, peer_df):
         """Company with lowest D/E should get highest percentile (inverted)."""
@@ -199,8 +342,12 @@ class TestPeerInversion:
             & (result["metric_name"] == "debt_to_equity")
         ].set_index("company_name")
 
-        assert it_de.loc["TCS", "percentile_rank"] > it_de.loc["INFY", "percentile_rank"]
-        assert it_de.loc["TCS", "percentile_rank"] > it_de.loc["WIPRO", "percentile_rank"]
+        assert (
+            it_de.loc["TCS", "percentile_rank"] > it_de.loc["INFY", "percentile_rank"]
+        )
+        assert (
+            it_de.loc["TCS", "percentile_rank"] > it_de.loc["WIPRO", "percentile_rank"]
+        )
 
     def test_high_de_low_percentile(self, peer_df):
         """Company with highest D/E should get lowest percentile (inverted)."""
@@ -212,7 +359,10 @@ class TestPeerInversion:
             & (result["metric_name"] == "debt_to_equity")
         ].set_index("company_name")
 
-        assert fin_de.loc["HDFCBANK", "percentile_rank"] < fin_de.loc["KOTAKBANK", "percentile_rank"]
+        assert (
+            fin_de.loc["HDFCBANK", "percentile_rank"]
+            < fin_de.loc["KOTAKBANK", "percentile_rank"]
+        )
 
     def test_non_inverted_metric_higher_is_better(self, peer_df):
         """ROE should NOT be inverted — higher ROE = higher percentile."""
@@ -223,10 +373,14 @@ class TestPeerInversion:
             & (result["metric_name"] == "return_on_equity")
         ].set_index("company_name")
 
-        assert it_roe.loc["TCS", "percentile_rank"] > it_roe.loc["WIPRO", "percentile_rank"]
+        assert (
+            it_roe.loc["TCS", "percentile_rank"]
+            > it_roe.loc["WIPRO", "percentile_rank"]
+        )
 
 
 # ── Edge Cases ────────────────────────────────────────────────────────────────
+
 
 class TestPeerEdgeCases:
     def test_missing_sector_col_raises(self, peer_df):
@@ -241,10 +395,41 @@ class TestPeerEdgeCases:
 
     def test_nan_metric_skipped(self):
         """Rows with NaN for a metric should not appear in output for that metric."""
-        df = pd.DataFrame([
-            _row("A", "IT", 2024, 15.0, np.nan, 10.0, 12.0, 0.8, 1.0, 0.5, 20.0, 5.0, 6.0),
-            _row("B", "IT", 2024, 12.0, 10.0,  8.0, 10.0, 0.7, 0.9, 0.3, 15.0, 4.0, 5.0),
-        ], columns=_PEER_COLS)
+        df = pd.DataFrame(
+            [
+                _row(
+                    "A",
+                    "IT",
+                    2024,
+                    15.0,
+                    np.nan,
+                    10.0,
+                    12.0,
+                    0.8,
+                    1.0,
+                    0.5,
+                    20.0,
+                    5.0,
+                    6.0,
+                ),
+                _row(
+                    "B",
+                    "IT",
+                    2024,
+                    12.0,
+                    10.0,
+                    8.0,
+                    10.0,
+                    0.7,
+                    0.9,
+                    0.3,
+                    15.0,
+                    4.0,
+                    5.0,
+                ),
+            ],
+            columns=_PEER_COLS,
+        )
         result = compute_peer_percentiles(df)
         roce_rows = result[result["metric_name"] == "return_on_capital_employed"]
         # Only B has ROCE data
@@ -253,25 +438,77 @@ class TestPeerEdgeCases:
 
     def test_tied_values_get_same_rank(self):
         """Identical metric values should produce the same percentile."""
-        df = pd.DataFrame([
-            _row("A", "IT", 2024, 15.0, 15.0, 10.0, 12.0, 0.8, 1.0, 0.5, 20.0, 5.0, 6.0),
-            _row("B", "IT", 2024, 15.0, 12.0,  8.0, 10.0, 0.7, 0.9, 0.3, 15.0, 4.0, 5.0),
-        ], columns=_PEER_COLS)
+        df = pd.DataFrame(
+            [
+                _row(
+                    "A",
+                    "IT",
+                    2024,
+                    15.0,
+                    15.0,
+                    10.0,
+                    12.0,
+                    0.8,
+                    1.0,
+                    0.5,
+                    20.0,
+                    5.0,
+                    6.0,
+                ),
+                _row(
+                    "B",
+                    "IT",
+                    2024,
+                    15.0,
+                    12.0,
+                    8.0,
+                    10.0,
+                    0.7,
+                    0.9,
+                    0.3,
+                    15.0,
+                    4.0,
+                    5.0,
+                ),
+            ],
+            columns=_PEER_COLS,
+        )
         result = compute_peer_percentiles(df)
-        roe_rows = result[
-            (result["metric_name"] == "return_on_equity")
-        ].set_index("company_name")
-        assert abs(roe_rows.loc["A", "percentile_rank"] - roe_rows.loc["B", "percentile_rank"]) < 0.01
+        roe_rows = result[(result["metric_name"] == "return_on_equity")].set_index(
+            "company_name"
+        )
+        assert (
+            abs(
+                roe_rows.loc["A", "percentile_rank"]
+                - roe_rows.loc["B", "percentile_rank"]
+            )
+            < 0.01
+        )
 
     def test_single_company_group_gets_50(self):
         """One company in a peer group → percentile = 50.0."""
-        df = pd.DataFrame([
-            _row("Solo", "IT", 2024, 15.0, 20.0, 10.0, 12.0, 0.8, 1.0, 0.5, 20.0, 5.0, 6.0),
-        ], columns=_PEER_COLS)
+        df = pd.DataFrame(
+            [
+                _row(
+                    "Solo",
+                    "IT",
+                    2024,
+                    15.0,
+                    20.0,
+                    10.0,
+                    12.0,
+                    0.8,
+                    1.0,
+                    0.5,
+                    20.0,
+                    5.0,
+                    6.0,
+                ),
+            ],
+            columns=_PEER_COLS,
+        )
         result = compute_peer_percentiles(df)
-        roe = result[
-            (result["metric_name"] == "return_on_equity")
-        ]
+        roe = result[(result["metric_name"] == "return_on_equity")]
         assert roe.iloc[0]["percentile_rank"] == 50.0
 
     def test_custom_metrics_parameter(self, peer_df):
@@ -279,12 +516,16 @@ class TestPeerEdgeCases:
         result = compute_peer_percentiles(
             peer_df, metrics=["return_on_equity", "debt_to_equity"]
         )
-        assert set(result["metric_name"].unique()) == {"return_on_equity", "debt_to_equity"}
+        assert set(result["metric_name"].unique()) == {
+            "return_on_equity",
+            "debt_to_equity",
+        }
         # 8 companies × 2 years × 2 metrics = 32
         assert len(result) == 32
 
 
 # ── SQLite Round-Trip ────────────────────────────────────────────────────────
+
 
 class TestPeerSQLite:
     def test_save_and_load_round_trip(self, peer_df, db_conn):
@@ -295,17 +536,20 @@ class TestPeerSQLite:
         loaded = load_peer_percentiles(db_conn)
         assert len(loaded) == len(computed)
         assert set(loaded.columns) >= {
-            "company_name", "year", "peer_group",
-            "metric_name", "raw_value", "percentile_rank", "peer_count",
+            "company_name",
+            "year",
+            "peer_group",
+            "metric_name",
+            "raw_value",
+            "percentile_rank",
+            "peer_count",
         }
 
     def test_filter_by_company_and_year(self, peer_df, db_conn):
         computed = compute_peer_percentiles(peer_df)
         save_peer_percentiles(db_conn, computed)
 
-        loaded = load_peer_percentiles(
-            db_conn, company_name="TCS", year=2023
-        )
+        loaded = load_peer_percentiles(db_conn, company_name="TCS", year=2023)
         assert len(loaded) == 10  # one row per metric
         assert (loaded["company_name"] == "TCS").all()
         assert (loaded["year"] == 2023).all()
@@ -325,9 +569,7 @@ class TestPeerSQLite:
         computed = compute_peer_percentiles(peer_df)
         save_peer_percentiles(db_conn, computed)
 
-        loaded = load_peer_percentiles(
-            db_conn, metric_name="return_on_equity"
-        )
+        loaded = load_peer_percentiles(db_conn, metric_name="return_on_equity")
         assert (loaded["metric_name"] == "return_on_equity").all()
         # 8 companies × 2 years = 16
         assert len(loaded) == 16
@@ -336,13 +578,12 @@ class TestPeerSQLite:
         computed = compute_peer_percentiles(peer_df)
         save_peer_percentiles(db_conn, computed)
 
-        loaded = load_peer_percentiles(
-            db_conn, company_name="NONEXISTENT"
-        )
+        loaded = load_peer_percentiles(db_conn, company_name="NONEXISTENT")
         assert len(loaded) == 0
 
 
 # ── Query Helpers ────────────────────────────────────────────────────────────
+
 
 class TestQueryHelpers:
     def test_get_peer_summary(self, peer_df, db_conn):

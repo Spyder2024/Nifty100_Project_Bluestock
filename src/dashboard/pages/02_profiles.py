@@ -1,7 +1,9 @@
 """Company Profile — search, KPIs, 10-yr charts, pros & cons."""
 
 from __future__ import annotations
-from pathlib import Path; import sys
+from pathlib import Path
+import sys
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 import pandas as pd
 import streamlit as st
@@ -105,12 +107,12 @@ if pl.empty:
 else:
     fig = go.Figure()
     fig.add_trace(
-        go.Bar(name="Revenue", x=pl["year"], y=pl["net_sales"],
-               marker_color="#2196F3")
+        go.Bar(name="Revenue", x=pl["year"], y=pl["net_sales"], marker_color="#2196F3")
     )
     fig.add_trace(
-        go.Bar(name="Net Profit", x=pl["year"], y=pl["net_profit"],
-               marker_color="#4CAF50")
+        go.Bar(
+            name="Net Profit", x=pl["year"], y=pl["net_profit"], marker_color="#4CAF50"
+        )
     )
     fig.update_layout(
         barmode="group",
@@ -132,14 +134,20 @@ else:
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=ratios["year"], y=ratios["roe"],
-            name="ROE", mode="lines+markers", line=dict(color="#1565C0"),
+            x=ratios["year"],
+            y=ratios["roe"],
+            name="ROE",
+            mode="lines+markers",
+            line=dict(color="#1565C0"),
         )
     )
     fig.add_trace(
         go.Scatter(
-            x=ratios["year"], y=ratios["roce"],
-            name="ROCE", mode="lines+markers", line=dict(color="#E65100"),
+            x=ratios["year"],
+            y=ratios["roce"],
+            name="ROCE",
+            mode="lines+markers",
+            line=dict(color="#E65100"),
             yaxis="y2",
         )
     )
@@ -147,7 +155,8 @@ else:
         yaxis=dict(title=dict(text="ROE (%)", font=dict(color="#1565C0"))),
         yaxis2=dict(
             title=dict(text="ROCE (%)", font=dict(color="#E65100")),
-            overlaying="y", side="right",
+            overlaying="y",
+            side="right",
         ),
         xaxis_title="Year",
         margin=dict(t=30, b=40, l=60, r=60),

@@ -15,7 +15,6 @@ Tests:
 import json
 from pathlib import Path
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 
@@ -25,7 +24,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 def test_screener_valid_and_ranking():
     """Verify screener filtering and ranking output."""
-    resp = client.get("/api/v1/screener?min_roe=15&max_de=1.0&min_rev_cagr_5yr=10&limit=5")
+    resp = client.get(
+        "/api/v1/screener?min_roe=15&max_de=1.0&min_rev_cagr_5yr=10&limit=5"
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert "results" in data

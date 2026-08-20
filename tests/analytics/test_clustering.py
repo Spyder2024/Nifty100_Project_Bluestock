@@ -10,7 +10,6 @@ Tests:
 7. Output CSV schema, row count, and distance-from-centroid validation.
 """
 
-from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
@@ -32,16 +31,25 @@ from src.analytics.clustering import (
 @pytest.fixture
 def sample_feature_df():
     """Synthetic dataset with known sector structure and missing values."""
-    return pd.DataFrame({
-        "company_id": ["C1", "C2", "C3", "C4", "C5", "C6"],
-        "company_name": ["Comp 1", "Comp 2", "Comp 3", "Comp 4", "Comp 5", "Comp 6"],
-        "sector": ["Tech", "Tech", "Tech", "Energy", "Energy", "Energy"],
-        "return_on_equity_pct": [25.0, np.nan, 20.0, 15.0, 18.0, np.nan],
-        "debt_to_equity": [0.1, 0.2, np.nan, 1.5, np.nan, 2.0],
-        "revenue_cagr_5yr": [15.0, 12.0, 18.0, 8.0, 10.0, np.nan],
-        "fcf_cagr_5yr": [np.nan, 14.0, 16.0, 5.0, 7.0, 6.0],
-        "operating_profit_margin_pct": [28.0, 25.0, np.nan, 35.0, 40.0, 38.0],
-    })
+    return pd.DataFrame(
+        {
+            "company_id": ["C1", "C2", "C3", "C4", "C5", "C6"],
+            "company_name": [
+                "Comp 1",
+                "Comp 2",
+                "Comp 3",
+                "Comp 4",
+                "Comp 5",
+                "Comp 6",
+            ],
+            "sector": ["Tech", "Tech", "Tech", "Energy", "Energy", "Energy"],
+            "return_on_equity_pct": [25.0, np.nan, 20.0, 15.0, 18.0, np.nan],
+            "debt_to_equity": [0.1, 0.2, np.nan, 1.5, np.nan, 2.0],
+            "revenue_cagr_5yr": [15.0, 12.0, 18.0, 8.0, 10.0, np.nan],
+            "fcf_cagr_5yr": [np.nan, 14.0, 16.0, 5.0, 7.0, 6.0],
+            "operating_profit_margin_pct": [28.0, 25.0, np.nan, 35.0, 40.0, 38.0],
+        }
+    )
 
 
 def test_load_clustering_features():
@@ -61,7 +69,10 @@ def test_impute_features(sample_feature_df):
     assert df_imputed[FEATURE_COLUMNS].isna().sum().sum() == 0
 
     # Tech ROE median is (25+20)/2 = 22.5
-    assert df_imputed.loc[df_imputed["company_id"] == "C2", "return_on_equity_pct"].iloc[0] == 22.5
+    assert (
+        df_imputed.loc[df_imputed["company_id"] == "C2", "return_on_equity_pct"].iloc[0]
+        == 22.5
+    )
 
 
 def test_scale_features(sample_feature_df):
@@ -103,13 +114,15 @@ def test_fit_kmeans():
 
 def test_assign_cluster_names():
     """Verify cluster names are generated uniquely."""
-    centroid_df = pd.DataFrame({
-        "return_on_equity_pct": [15.0, 55.0, 1.0, 18.0, 17.0],
-        "debt_to_equity": [0.7, 0.7, 0.0, 8.0, 0.7],
-        "revenue_cagr_5yr": [11.0, 13.0, 500.0, 19.0, 14.0],
-        "fcf_cagr_5yr": [16.0, 30.0, 14.0, 15.0, 20.0],
-        "operating_profit_margin_pct": [20.0, 20.0, 85.0, 55.0, 80.0],
-    })
+    centroid_df = pd.DataFrame(
+        {
+            "return_on_equity_pct": [15.0, 55.0, 1.0, 18.0, 17.0],
+            "debt_to_equity": [0.7, 0.7, 0.0, 8.0, 0.7],
+            "revenue_cagr_5yr": [11.0, 13.0, 500.0, 19.0, 14.0],
+            "fcf_cagr_5yr": [16.0, 30.0, 14.0, 15.0, 20.0],
+            "operating_profit_margin_pct": [20.0, 20.0, 85.0, 55.0, 80.0],
+        }
+    )
     names = assign_cluster_names(centroid_df)
     assert len(names) == 5
     assert len(set(names.values())) == 5
@@ -146,6 +159,11 @@ def test_run_clustering_e2e(tmp_path):
 
     df_csv = pd.read_csv(out_csv)
     assert len(df_csv) == 92
-    assert list(df_csv.columns) == ["company_id", "cluster_id", "cluster_name", "distance_from_centroid"]
+    assert list(df_csv.columns) == [
+        "company_id",
+        "cluster_id",
+        "cluster_name",
+        "distance_from_centroid",
+    ]
     assert set(df_csv["cluster_id"].unique()).issubset({0, 1, 2, 3, 4})
     assert (df_csv["distance_from_centroid"] >= 0).all()

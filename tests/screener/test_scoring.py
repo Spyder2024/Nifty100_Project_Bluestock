@@ -19,8 +19,8 @@ from src.screener.scoring import (
     LEVERAGE_METRICS,
 )
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def single_sector_df():
@@ -41,19 +41,18 @@ def multi_sector_df():
     return pd.DataFrame(
         {
             "company_name": ["A", "B", "C", "D", "E", "F", "G", "H"],
-            "sector": ["Tech", "Tech", "Tech", "Tech",
-                       "Bank", "Bank", "Bank", "Bank"],
-            "return_on_equity":          [10, 15, 20, 25,  8, 12, 16, 20],
+            "sector": ["Tech", "Tech", "Tech", "Tech", "Bank", "Bank", "Bank", "Bank"],
+            "return_on_equity": [10, 15, 20, 25, 8, 12, 16, 20],
             "return_on_capital_employed": [12, 18, 24, 30, 10, 15, 20, 25],
-            "net_profit_margin":         [10, 15, 20, 25,  8, 12, 16, 20],
-            "operating_profit_margin":   [15, 20, 25, 30, 12, 16, 20, 24],
-            "cfo_quality_score":        [0.6, 0.7, 0.8, 0.9, 0.5, 0.6, 0.7, 0.8],
+            "net_profit_margin": [10, 15, 20, 25, 8, 12, 16, 20],
+            "operating_profit_margin": [15, 20, 25, 30, 12, 16, 20, 24],
+            "cfo_quality_score": [0.6, 0.7, 0.8, 0.9, 0.5, 0.6, 0.7, 0.8],
             "operating_cash_flow_ratio": [0.8, 1.0, 1.2, 1.4, 0.6, 0.8, 1.0, 1.2],
-            "revenue_cagr_5yr":         [5.0, 10, 15, 20,  3.0, 7.0, 11, 15],
-            "net_profit_cagr_5yr":      [8.0, 12, 16, 20,  5.0, 9.0, 13, 17],
-            "ebitda_cagr_5yr":          [6.0, 10, 14, 18,  4.0, 8.0, 12, 16],
-            "debt_to_equity":           [0.5, 0.8, 1.2, 2.0, 0.3, 0.6, 1.0, 1.5],
-            "interest_coverage_ratio":  [10,  15,  20, 25,   8,  12,  16, 20],
+            "revenue_cagr_5yr": [5.0, 10, 15, 20, 3.0, 7.0, 11, 15],
+            "net_profit_cagr_5yr": [8.0, 12, 16, 20, 5.0, 9.0, 13, 17],
+            "ebitda_cagr_5yr": [6.0, 10, 14, 18, 4.0, 8.0, 12, 16],
+            "debt_to_equity": [0.5, 0.8, 1.2, 2.0, 0.3, 0.6, 1.0, 1.5],
+            "interest_coverage_ratio": [10, 15, 20, 25, 8, 12, 16, 20],
         }
     )
 
@@ -85,6 +84,7 @@ def single_company_sector():
 
 
 # ── Winsorise ────────────────────────────────────────────────────────────────
+
 
 class TestWinsoriseSeries:
     def test_clips_upper_outlier(self):
@@ -120,6 +120,7 @@ class TestWinsoriseSeries:
 
 # ── Sector-Relative Score ────────────────────────────────────────────────────
 
+
 class TestSectorRelativeScore:
     def test_scores_in_0_to_100(self, single_sector_df):
         scores = sector_relative_score(single_sector_df, "return_on_equity")
@@ -149,11 +150,13 @@ class TestSectorRelativeScore:
         assert scores.isna().all()
 
     def test_identical_values_same_score(self):
-        df = pd.DataFrame({
-            "company_name": ["X", "Y", "Z"],
-            "sector": ["S"] * 3,
-            "return_on_equity": [15.0, 15.0, 15.0],
-        })
+        df = pd.DataFrame(
+            {
+                "company_name": ["X", "Y", "Z"],
+                "sector": ["S"] * 3,
+                "return_on_equity": [15.0, 15.0, 15.0],
+            }
+        )
         scores = sector_relative_score(df, "return_on_equity").dropna()
         assert len(scores.unique()) == 1
 
@@ -167,6 +170,7 @@ class TestSectorRelativeScore:
 
 
 # ── Composite Score ──────────────────────────────────────────────────────────
+
 
 class TestCompositeScore:
     def test_returns_series(self, multi_sector_df):
@@ -190,6 +194,7 @@ class TestCompositeScore:
 
 # ── Compute All Scores ───────────────────────────────────────────────────────
 
+
 class TestComputeAllScores:
     def test_returns_dataframe(self, multi_sector_df):
         assert isinstance(compute_all_scores(multi_sector_df), pd.DataFrame)
@@ -197,8 +202,11 @@ class TestComputeAllScores:
     def test_has_all_five_score_columns(self, multi_sector_df):
         cols = compute_all_scores(multi_sector_df).columns.tolist()
         for expected in [
-            "composite_score", "profitability_score",
-            "cash_quality_score", "growth_score", "leverage_score",
+            "composite_score",
+            "profitability_score",
+            "cash_quality_score",
+            "growth_score",
+            "leverage_score",
         ]:
             assert expected in cols
 
@@ -210,7 +218,9 @@ class TestComputeAllScores:
             + 0.20 * r["growth_score"]
             + 0.15 * r["leverage_score"]
         )
-        np.testing.assert_allclose(r["composite_score"], reconstructed.round(2), atol=0.01)
+        np.testing.assert_allclose(
+            r["composite_score"], reconstructed.round(2), atol=0.01
+        )
 
     def test_empty_df_has_correct_columns(self):
         empty = pd.DataFrame({"company_name": [], "sector": []})
@@ -218,11 +228,13 @@ class TestComputeAllScores:
         assert "composite_score" in r.columns and len(r) == 0
 
     def test_two_companies_get_50_and_100(self):
-        df = pd.DataFrame({
-            "company_name": ["Lo", "Hi"],
-            "sector": ["S"] * 2,
-            "return_on_equity": [10.0, 20.0],
-        })
+        df = pd.DataFrame(
+            {
+                "company_name": ["Lo", "Hi"],
+                "sector": ["S"] * 2,
+                "return_on_equity": [10.0, 20.0],
+            }
+        )
         scores = compute_all_scores(df)
         # Only profitability has data; others are 50.0
         assert scores["profitability_score"].iloc[0] == 50.0
@@ -232,38 +244,46 @@ class TestComputeAllScores:
 
 # ── Edge Cases ───────────────────────────────────────────────────────────────
 
+
 class TestEdgeCases:
     def test_all_nan_metrics(self):
-        df = pd.DataFrame({
-            "company_name": ["A", "B"],
-            "sector": ["S"] * 2,
-            "return_on_equity": [np.nan, np.nan],
-        })
+        df = pd.DataFrame(
+            {
+                "company_name": ["A", "B"],
+                "sector": ["S"] * 2,
+                "return_on_equity": [np.nan, np.nan],
+            }
+        )
         r = compute_all_scores(df)
         assert len(r) == 2 and "composite_score" in r.columns
 
     def test_missing_metrics_get_neutral(self):
-        df = pd.DataFrame({
-            "company_name": ["A", "B"],
-            "sector": ["S"] * 2,
-            "return_on_equity": [15.0, 12.0],
-        })
+        df = pd.DataFrame(
+            {
+                "company_name": ["A", "B"],
+                "sector": ["S"] * 2,
+                "return_on_equity": [15.0, 12.0],
+            }
+        )
         r = compute_all_scores(df)
         # No growth metrics → neutral 50
         assert r["growth_score"].iloc[0] == 50.0
 
     def test_different_metric_availability_per_sector(self):
-        df = pd.DataFrame({
-            "company_name": ["A", "B"],
-            "sector": ["Tech", "Bank"],
-            "return_on_equity": [15.0, 12.0],
-        })
+        df = pd.DataFrame(
+            {
+                "company_name": ["A", "B"],
+                "sector": ["Tech", "Bank"],
+                "return_on_equity": [15.0, 12.0],
+            }
+        )
         r = compute_all_scores(df)
         # Each sector has 1 company → neutral 50 for all
         assert r["profitability_score"].iloc[0] == 50.0
 
 
 # ── Constants ────────────────────────────────────────────────────────────────
+
 
 class TestConstants:
     def test_weights_sum_to_one(self):

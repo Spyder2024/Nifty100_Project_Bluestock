@@ -9,7 +9,6 @@ with no side-effects beyond optional st.warning / st.error calls.
 from __future__ import annotations
 
 import logging
-import sys
 from pathlib import Path
 from typing import Any, Callable, TypeVar
 
@@ -34,6 +33,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 # ── Public API ─────────────────────────────────────────────────────────────
+
 
 def safe_execute(
     func: F,
@@ -95,9 +95,7 @@ def validate_dataframe(
         return False
 
     if len(df) < min_rows:
-        st.warning(
-            f"⚠️ [{component}] Only {len(df)} row(s) — expected ≥ {min_rows}."
-        )
+        st.warning(f"⚠️ [{component}] Only {len(df)} row(s) — expected ≥ {min_rows}.")
 
     if not required_cols:
         return True
@@ -105,9 +103,7 @@ def validate_dataframe(
     present = set(df.columns)
     missing = [c for c in required_cols if c not in present]
     if missing:
-        st.warning(
-            f"⚠️ [{component}] Columns not found: {', '.join(missing)}"
-        )
+        st.warning(f"⚠️ [{component}] Columns not found: {', '.join(missing)}")
         return False
 
     # Warn on near-empty required columns (handles both NaN and PyArrow None)

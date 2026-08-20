@@ -11,7 +11,6 @@ Tests:
 """
 
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 
@@ -27,7 +26,9 @@ def test_screener_min_roe_filter():
         assert data["total_matched"] > 0
         assert len(data["results"]) > 0
         for co in data["results"]:
-            assert co["roe"] >= 15.0, f"Company {co['company_id']} has ROE {co['roe']} < 15.0"
+            assert (
+                co["roe"] >= 15.0
+            ), f"Company {co['company_id']} has ROE {co['roe']} < 15.0"
 
 
 def test_screener_invalid_parameter_returns_400():

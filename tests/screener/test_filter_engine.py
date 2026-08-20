@@ -16,15 +16,12 @@ Covers:
 from __future__ import annotations
 
 from pathlib import Path
-from textwrap import dedent
 
-import numpy as np
 import pandas as pd
 import pytest
 import yaml
 
 from src.screener.engine import FilterEngine, apply_filters, load_preset
-
 
 # ==================================================================
 # Fixtures
@@ -36,30 +33,132 @@ def tmp_config(tmp_path: Path) -> Path:
     """Write a minimal screener_config.yaml to tmp_path."""
     config = {
         "filters": {
-            "roe": {"column": "roe", "display_name": "ROE", "direction": "min", "default": None, "unit": "%"},
-            "debt_to_equity": {"column": "debt_to_equity", "display_name": "D/E", "direction": "max", "default": None, "unit": "x", "skip_sectors": ["Financials", "FIN"]},
-            "free_cash_flow": {"column": "free_cash_flow", "display_name": "FCF", "direction": "min", "default": None, "unit": "Cr"},
-            "revenue_cagr_5yr": {"column": "revenue_cagr_5yr", "display_name": "Rev CAGR 5Y", "direction": "min", "default": None, "unit": "%"},
-            "pat_cagr_5yr": {"column": "pat_cagr_5yr", "display_name": "PAT CAGR 5Y", "direction": "min", "default": None, "unit": "%"},
-            "operating_profit_margin": {"column": "operating_profit_margin", "display_name": "OPM", "direction": "min", "default": None, "unit": "%"},
-            "pe_ratio": {"column": "pe_ratio", "display_name": "P/E", "direction": "max", "default": None, "unit": "x"},
-            "pb_ratio": {"column": "pb_ratio", "display_name": "P/B", "direction": "max", "default": None, "unit": "x"},
-            "dividend_yield": {"column": "dividend_yield", "display_name": "Div Yield", "direction": "min", "default": None, "unit": "%"},
-            "interest_coverage_ratio": {"column": "interest_coverage_ratio", "display_name": "ICR", "direction": "min", "default": None, "unit": "x", "debt_free_passes": True},
-            "market_cap": {"column": "market_cap", "display_name": "Mkt Cap", "direction": "min", "default": None, "unit": "Cr"},
-            "net_profit": {"column": "net_profit", "display_name": "Net Profit", "direction": "min", "default": None, "unit": "Cr"},
-            "eps_cagr_5yr": {"column": "eps_cagr_5yr", "display_name": "EPS CAGR 5Y", "direction": "min", "default": None, "unit": "%"},
-            "asset_turnover": {"column": "asset_turnover", "display_name": "Asset Turn", "direction": "min", "default": None, "unit": "x"},
-            "net_sales": {"column": "net_sales", "display_name": "Sales", "direction": "min", "default": None, "unit": "Cr"},
+            "roe": {
+                "column": "roe",
+                "display_name": "ROE",
+                "direction": "min",
+                "default": None,
+                "unit": "%",
+            },
+            "debt_to_equity": {
+                "column": "debt_to_equity",
+                "display_name": "D/E",
+                "direction": "max",
+                "default": None,
+                "unit": "x",
+                "skip_sectors": ["Financials", "FIN"],
+            },
+            "free_cash_flow": {
+                "column": "free_cash_flow",
+                "display_name": "FCF",
+                "direction": "min",
+                "default": None,
+                "unit": "Cr",
+            },
+            "revenue_cagr_5yr": {
+                "column": "revenue_cagr_5yr",
+                "display_name": "Rev CAGR 5Y",
+                "direction": "min",
+                "default": None,
+                "unit": "%",
+            },
+            "pat_cagr_5yr": {
+                "column": "pat_cagr_5yr",
+                "display_name": "PAT CAGR 5Y",
+                "direction": "min",
+                "default": None,
+                "unit": "%",
+            },
+            "operating_profit_margin": {
+                "column": "operating_profit_margin",
+                "display_name": "OPM",
+                "direction": "min",
+                "default": None,
+                "unit": "%",
+            },
+            "pe_ratio": {
+                "column": "pe_ratio",
+                "display_name": "P/E",
+                "direction": "max",
+                "default": None,
+                "unit": "x",
+            },
+            "pb_ratio": {
+                "column": "pb_ratio",
+                "display_name": "P/B",
+                "direction": "max",
+                "default": None,
+                "unit": "x",
+            },
+            "dividend_yield": {
+                "column": "dividend_yield",
+                "display_name": "Div Yield",
+                "direction": "min",
+                "default": None,
+                "unit": "%",
+            },
+            "interest_coverage_ratio": {
+                "column": "interest_coverage_ratio",
+                "display_name": "ICR",
+                "direction": "min",
+                "default": None,
+                "unit": "x",
+                "debt_free_passes": True,
+            },
+            "market_cap": {
+                "column": "market_cap",
+                "display_name": "Mkt Cap",
+                "direction": "min",
+                "default": None,
+                "unit": "Cr",
+            },
+            "net_profit": {
+                "column": "net_profit",
+                "display_name": "Net Profit",
+                "direction": "min",
+                "default": None,
+                "unit": "Cr",
+            },
+            "eps_cagr_5yr": {
+                "column": "eps_cagr_5yr",
+                "display_name": "EPS CAGR 5Y",
+                "direction": "min",
+                "default": None,
+                "unit": "%",
+            },
+            "asset_turnover": {
+                "column": "asset_turnover",
+                "display_name": "Asset Turn",
+                "direction": "min",
+                "default": None,
+                "unit": "x",
+            },
+            "net_sales": {
+                "column": "net_sales",
+                "display_name": "Sales",
+                "direction": "min",
+                "default": None,
+                "unit": "Cr",
+            },
         },
         "presets": {
             "quality_compounder": {
                 "display_name": "Quality Compounder",
-                "filters": {"roe": 15.0, "debt_to_equity": 1.0, "free_cash_flow": 0.0, "revenue_cagr_5yr": 10.0},
+                "filters": {
+                    "roe": 15.0,
+                    "debt_to_equity": 1.0,
+                    "free_cash_flow": 0.0,
+                    "revenue_cagr_5yr": 10.0,
+                },
             },
             "value_pick": {
                 "display_name": "Value Pick",
-                "filters": {"pe_ratio": 20.0, "pb_ratio": 3.0, "debt_to_equity": 2.0, "dividend_yield": 1.0},
+                "filters": {
+                    "pe_ratio": 20.0,
+                    "pb_ratio": 3.0,
+                    "debt_to_equity": 2.0,
+                    "dividend_yield": 1.0,
+                },
             },
         },
         "financial_sectors": ["Financials", "FIN", "NBFC", "Banks"],
@@ -75,123 +174,251 @@ def sample_df() -> pd.DataFrame:
     data = [
         # TCS — debt-free, high ROE, IT sector
         {
-            "company_id": "TCS", "company_name": "Tata Consultancy Services",
-            "year": "2024", "sector_id": "IT", "broad_sector": "IT",
-            "roe": 48.5, "roce": 62.3, "net_profit_margin": 19.2,
-            "operating_profit_margin": 26.4, "interest_coverage_ratio": None,
-            "debt_to_equity": 0.0, "asset_turnover": 0.92,
-            "pe_ratio": 32.5, "pb_ratio": 14.8, "dividend_yield": 1.2,
-            "dividend_payout_ratio": 38.0, "market_cap": 1450000,
-            "net_sales": 240000, "net_profit": 46000, "eps": 126.0,
-            "free_cash_flow": 38000, "cfo_quality_score": 115.0,
-            "fcf_conversion_rate": 65.0, "revenue_cagr_5yr": 11.5,
-            "pat_cagr_5yr": 10.2, "eps_cagr_5yr": 10.0,
-            "is_debt_free": 1, "composite_quality_score": None,
+            "company_id": "TCS",
+            "company_name": "Tata Consultancy Services",
+            "year": "2024",
+            "sector_id": "IT",
+            "broad_sector": "IT",
+            "roe": 48.5,
+            "roce": 62.3,
+            "net_profit_margin": 19.2,
+            "operating_profit_margin": 26.4,
+            "interest_coverage_ratio": None,
+            "debt_to_equity": 0.0,
+            "asset_turnover": 0.92,
+            "pe_ratio": 32.5,
+            "pb_ratio": 14.8,
+            "dividend_yield": 1.2,
+            "dividend_payout_ratio": 38.0,
+            "market_cap": 1450000,
+            "net_sales": 240000,
+            "net_profit": 46000,
+            "eps": 126.0,
+            "free_cash_flow": 38000,
+            "cfo_quality_score": 115.0,
+            "fcf_conversion_rate": 65.0,
+            "revenue_cagr_5yr": 11.5,
+            "pat_cagr_5yr": 10.2,
+            "eps_cagr_5yr": 10.0,
+            "is_debt_free": 1,
+            "composite_quality_score": None,
         },
         # RELIANCE — leveraged, high revenue, Energy
         {
-            "company_id": "RELIANCE", "company_name": "Reliance Industries",
-            "year": "2024", "sector_id": "OIL", "broad_sector": "Energy",
-            "roe": 8.5, "roce": 10.2, "net_profit_margin": 8.1,
-            "operating_profit_margin": 14.5, "interest_coverage_ratio": 4.2,
-            "debt_to_equity": 0.65, "asset_turnover": 0.75,
-            "pe_ratio": 28.0, "pb_ratio": 2.5, "dividend_yield": 0.3,
-            "dividend_payout_ratio": 10.0, "market_cap": 2100000,
-            "net_sales": 980000, "net_profit": 79500, "eps": 118.0,
-            "free_cash_flow": 15000, "cfo_quality_score": 95.0,
-            "fcf_conversion_rate": 25.0, "revenue_cagr_5yr": 12.0,
-            "pat_cagr_5yr": 8.5, "eps_cagr_5yr": 8.0,
-            "is_debt_free": 0, "composite_quality_score": None,
+            "company_id": "RELIANCE",
+            "company_name": "Reliance Industries",
+            "year": "2024",
+            "sector_id": "OIL",
+            "broad_sector": "Energy",
+            "roe": 8.5,
+            "roce": 10.2,
+            "net_profit_margin": 8.1,
+            "operating_profit_margin": 14.5,
+            "interest_coverage_ratio": 4.2,
+            "debt_to_equity": 0.65,
+            "asset_turnover": 0.75,
+            "pe_ratio": 28.0,
+            "pb_ratio": 2.5,
+            "dividend_yield": 0.3,
+            "dividend_payout_ratio": 10.0,
+            "market_cap": 2100000,
+            "net_sales": 980000,
+            "net_profit": 79500,
+            "eps": 118.0,
+            "free_cash_flow": 15000,
+            "cfo_quality_score": 95.0,
+            "fcf_conversion_rate": 25.0,
+            "revenue_cagr_5yr": 12.0,
+            "pat_cagr_5yr": 8.5,
+            "eps_cagr_5yr": 8.0,
+            "is_debt_free": 0,
+            "composite_quality_score": None,
         },
         # HDFCBANK — Financials, high D/E (normal for bank)
         {
-            "company_id": "HDFCBANK", "company_name": "HDFC Bank",
-            "year": "2024", "sector_id": "Banks", "broad_sector": "Financials",
-            "roe": 16.8, "roce": 7.5, "net_profit_margin": 22.0,
-            "operating_profit_margin": 42.0, "interest_coverage_ratio": None,
-            "debt_to_equity": 5.8, "asset_turnover": 0.08,
-            "pe_ratio": 19.5, "pb_ratio": 2.8, "dividend_yield": 1.1,
-            "dividend_payout_ratio": 21.0, "market_cap": 1250000,
-            "net_sales": 285000, "net_profit": 62700, "eps": 118.5,
-            "free_cash_flow": 45000, "cfo_quality_score": 125.0,
-            "fcf_conversion_rate": 72.0, "revenue_cagr_5yr": 18.0,
-            "pat_cagr_5yr": 16.5, "eps_cagr_5yr": 14.0,
-            "is_debt_free": 0, "composite_quality_score": None,
+            "company_id": "HDFCBANK",
+            "company_name": "HDFC Bank",
+            "year": "2024",
+            "sector_id": "Banks",
+            "broad_sector": "Financials",
+            "roe": 16.8,
+            "roce": 7.5,
+            "net_profit_margin": 22.0,
+            "operating_profit_margin": 42.0,
+            "interest_coverage_ratio": None,
+            "debt_to_equity": 5.8,
+            "asset_turnover": 0.08,
+            "pe_ratio": 19.5,
+            "pb_ratio": 2.8,
+            "dividend_yield": 1.1,
+            "dividend_payout_ratio": 21.0,
+            "market_cap": 1250000,
+            "net_sales": 285000,
+            "net_profit": 62700,
+            "eps": 118.5,
+            "free_cash_flow": 45000,
+            "cfo_quality_score": 125.0,
+            "fcf_conversion_rate": 72.0,
+            "revenue_cagr_5yr": 18.0,
+            "pat_cagr_5yr": 16.5,
+            "eps_cagr_5yr": 14.0,
+            "is_debt_free": 0,
+            "composite_quality_score": None,
         },
         # ITC — moderate ROE, high dividend, FMCG
         {
-            "company_id": "ITC", "company_name": "ITC Limited",
-            "year": "2024", "sector_id": "FMCG", "broad_sector": "FMCG",
-            "roe": 26.0, "roce": 30.5, "net_profit_margin": 26.8,
-            "operating_profit_margin": 42.0, "interest_coverage_ratio": 12.5,
-            "debt_to_equity": 0.01, "asset_turnover": 0.55,
-            "pe_ratio": 25.5, "pb_ratio": 6.5, "dividend_yield": 3.2,
-            "dividend_payout_ratio": 82.0, "market_cap": 560000,
-            "net_sales": 70000, "net_profit": 18800, "eps": 24.0,
-            "free_cash_flow": 15000, "cfo_quality_score": 130.0,
-            "fcf_conversion_rate": 70.0, "revenue_cagr_5yr": 8.0,
-            "pat_cagr_5yr": 9.0, "eps_cagr_5yr": 8.5,
-            "is_debt_free": 1, "composite_quality_score": None,
+            "company_id": "ITC",
+            "company_name": "ITC Limited",
+            "year": "2024",
+            "sector_id": "FMCG",
+            "broad_sector": "FMCG",
+            "roe": 26.0,
+            "roce": 30.5,
+            "net_profit_margin": 26.8,
+            "operating_profit_margin": 42.0,
+            "interest_coverage_ratio": 12.5,
+            "debt_to_equity": 0.01,
+            "asset_turnover": 0.55,
+            "pe_ratio": 25.5,
+            "pb_ratio": 6.5,
+            "dividend_yield": 3.2,
+            "dividend_payout_ratio": 82.0,
+            "market_cap": 560000,
+            "net_sales": 70000,
+            "net_profit": 18800,
+            "eps": 24.0,
+            "free_cash_flow": 15000,
+            "cfo_quality_score": 130.0,
+            "fcf_conversion_rate": 70.0,
+            "revenue_cagr_5yr": 8.0,
+            "pat_cagr_5yr": 9.0,
+            "eps_cagr_5yr": 8.5,
+            "is_debt_free": 1,
+            "composite_quality_score": None,
         },
         # VODAIDEA — loss-making, negative equity, Telecom
         {
-            "company_id": "VODAIDEA", "company_name": "Vodafone Idea",
-            "year": "2024", "sector_id": "TELECOM", "broad_sector": "Telecom",
-            "roe": None, "roce": None, "net_profit_margin": -15.0,
-            "operating_profit_margin": 22.0, "interest_coverage_ratio": 0.5,
-            "debt_to_equity": 8.5, "asset_turnover": 0.35,
-            "pe_ratio": None, "pb_ratio": 0.3, "dividend_yield": 0.0,
-            "dividend_payout_ratio": None, "market_cap": 85000,
-            "net_sales": 45000, "net_profit": -6750, "eps": -8.5,
-            "free_cash_flow": -5000, "cfo_quality_score": None,
-            "fcf_conversion_rate": None, "revenue_cagr_5yr": -5.0,
-            "pat_cagr_5yr": None, "eps_cagr_5yr": None,
-            "is_debt_free": 0, "composite_quality_score": None,
+            "company_id": "VODAIDEA",
+            "company_name": "Vodafone Idea",
+            "year": "2024",
+            "sector_id": "TELECOM",
+            "broad_sector": "Telecom",
+            "roe": None,
+            "roce": None,
+            "net_profit_margin": -15.0,
+            "operating_profit_margin": 22.0,
+            "interest_coverage_ratio": 0.5,
+            "debt_to_equity": 8.5,
+            "asset_turnover": 0.35,
+            "pe_ratio": None,
+            "pb_ratio": 0.3,
+            "dividend_yield": 0.0,
+            "dividend_payout_ratio": None,
+            "market_cap": 85000,
+            "net_sales": 45000,
+            "net_profit": -6750,
+            "eps": -8.5,
+            "free_cash_flow": -5000,
+            "cfo_quality_score": None,
+            "fcf_conversion_rate": None,
+            "revenue_cagr_5yr": -5.0,
+            "pat_cagr_5yr": None,
+            "eps_cagr_5yr": None,
+            "is_debt_free": 0,
+            "composite_quality_score": None,
         },
         # INFY — high ROE, debt-free, IT
         {
-            "company_id": "INFY", "company_name": "Infosys Limited",
-            "year": "2024", "sector_id": "IT", "broad_sector": "IT",
-            "roe": 31.2, "roce": 42.5, "net_profit_margin": 17.5,
-            "operating_profit_margin": 23.0, "interest_coverage_ratio": None,
-            "debt_to_equity": 0.0, "asset_turnover": 0.85,
-            "pe_ratio": 24.0, "pb_ratio": 7.2, "dividend_yield": 2.5,
-            "dividend_payout_ratio": 55.0, "market_cap": 680000,
-            "net_sales": 165000, "net_profit": 28800, "eps": 69.0,
-            "free_cash_flow": 22000, "cfo_quality_score": 120.0,
-            "fcf_conversion_rate": 58.0, "revenue_cagr_5yr": 12.0,
-            "pat_cagr_5yr": 11.0, "eps_cagr_5yr": 11.5,
-            "is_debt_free": 1, "composite_quality_score": None,
+            "company_id": "INFY",
+            "company_name": "Infosys Limited",
+            "year": "2024",
+            "sector_id": "IT",
+            "broad_sector": "IT",
+            "roe": 31.2,
+            "roce": 42.5,
+            "net_profit_margin": 17.5,
+            "operating_profit_margin": 23.0,
+            "interest_coverage_ratio": None,
+            "debt_to_equity": 0.0,
+            "asset_turnover": 0.85,
+            "pe_ratio": 24.0,
+            "pb_ratio": 7.2,
+            "dividend_yield": 2.5,
+            "dividend_payout_ratio": 55.0,
+            "market_cap": 680000,
+            "net_sales": 165000,
+            "net_profit": 28800,
+            "eps": 69.0,
+            "free_cash_flow": 22000,
+            "cfo_quality_score": 120.0,
+            "fcf_conversion_rate": 58.0,
+            "revenue_cagr_5yr": 12.0,
+            "pat_cagr_5yr": 11.0,
+            "eps_cagr_5yr": 11.5,
+            "is_debt_free": 1,
+            "composite_quality_score": None,
         },
         # HINDUNILVR — moderate, FMCG, positive FCF
         {
-            "company_id": "HINDUNILVR", "company_name": "Hindustan Unilever",
-            "year": "2024", "sector_id": "FMCG", "broad_sector": "FMCG",
-            "roe": 18.0, "roce": 22.0, "net_profit_margin": 10.5,
-            "operating_profit_margin": 16.0, "interest_coverage_ratio": 15.0,
-            "debt_to_equity": 0.35, "asset_turnover": 1.2,
-            "pe_ratio": 55.0, "pb_ratio": 10.0, "dividend_yield": 1.8,
-            "dividend_payout_ratio": 95.0, "market_cap": 590000,
-            "net_sales": 56000, "net_profit": 5900, "eps": 25.0,
-            "free_cash_flow": 7000, "cfo_quality_score": 105.0,
-            "fcf_conversion_rate": 48.0, "revenue_cagr_5yr": 5.0,
-            "pat_cagr_5yr": 8.0, "eps_cagr_5yr": 7.0,
-            "is_debt_free": 0, "composite_quality_score": None,
+            "company_id": "HINDUNILVR",
+            "company_name": "Hindustan Unilever",
+            "year": "2024",
+            "sector_id": "FMCG",
+            "broad_sector": "FMCG",
+            "roe": 18.0,
+            "roce": 22.0,
+            "net_profit_margin": 10.5,
+            "operating_profit_margin": 16.0,
+            "interest_coverage_ratio": 15.0,
+            "debt_to_equity": 0.35,
+            "asset_turnover": 1.2,
+            "pe_ratio": 55.0,
+            "pb_ratio": 10.0,
+            "dividend_yield": 1.8,
+            "dividend_payout_ratio": 95.0,
+            "market_cap": 590000,
+            "net_sales": 56000,
+            "net_profit": 5900,
+            "eps": 25.0,
+            "free_cash_flow": 7000,
+            "cfo_quality_score": 105.0,
+            "fcf_conversion_rate": 48.0,
+            "revenue_cagr_5yr": 5.0,
+            "pat_cagr_5yr": 8.0,
+            "eps_cagr_5yr": 7.0,
+            "is_debt_free": 0,
+            "composite_quality_score": None,
         },
         # SBIN — Financials (bank), high D/E
         {
-            "company_id": "SBIN", "company_name": "State Bank of India",
-            "year": "2024", "sector_id": "Banks", "broad_sector": "Financials",
-            "roe": 18.5, "roce": 8.0, "net_profit_margin": 12.0,
-            "operating_profit_margin": 35.0, "interest_coverage_ratio": 1.5,
-            "debt_to_equity": 7.2, "asset_turnover": 0.06,
-            "pe_ratio": 10.5, "pb_ratio": 1.8, "dividend_yield": 1.5,
-            "dividend_payout_ratio": 16.0, "market_cap": 680000,
-            "net_sales": 355000, "net_profit": 42600, "eps": 48.0,
-            "free_cash_flow": 35000, "cfo_quality_score": 110.0,
-            "fcf_conversion_rate": 60.0, "revenue_cagr_5yr": 14.0,
-            "pat_cagr_5yr": 22.0, "eps_cagr_5yr": 18.0,
-            "is_debt_free": 0, "composite_quality_score": None,
+            "company_id": "SBIN",
+            "company_name": "State Bank of India",
+            "year": "2024",
+            "sector_id": "Banks",
+            "broad_sector": "Financials",
+            "roe": 18.5,
+            "roce": 8.0,
+            "net_profit_margin": 12.0,
+            "operating_profit_margin": 35.0,
+            "interest_coverage_ratio": 1.5,
+            "debt_to_equity": 7.2,
+            "asset_turnover": 0.06,
+            "pe_ratio": 10.5,
+            "pb_ratio": 1.8,
+            "dividend_yield": 1.5,
+            "dividend_payout_ratio": 16.0,
+            "market_cap": 680000,
+            "net_sales": 355000,
+            "net_profit": 42600,
+            "eps": 48.0,
+            "free_cash_flow": 35000,
+            "cfo_quality_score": 110.0,
+            "fcf_conversion_rate": 60.0,
+            "revenue_cagr_5yr": 14.0,
+            "pat_cagr_5yr": 22.0,
+            "eps_cagr_5yr": 18.0,
+            "is_debt_free": 0,
+            "composite_quality_score": None,
         },
     ]
     return pd.DataFrame(data)
@@ -240,7 +467,9 @@ class TestConfigLoading:
         original_count = len(engine.filters)
         # Modify the file
         with open(tmp_config, "a", encoding="utf-8") as f:
-            f.write("\nnew_test_filter:\n  column: test_col\n  display_name: Test\n  direction: min\n  default: null\n  unit: ''\n")
+            f.write(
+                "\nnew_test_filter:\n  column: test_col\n  display_name: Test\n  direction: min\n  default: null\n  unit: ''\n"
+            )
         engine.reload()
         # The new entry isn't under 'filters:' key so filter count unchanged
         assert len(engine.filters) == original_count
@@ -254,7 +483,9 @@ class TestConfigLoading:
 class TestMinFilters:
     """Tests for min-direction filters (keep >= threshold)."""
 
-    def test_roe_min_filter(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_roe_min_filter(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, roe=20.0)
         ids = result["company_id"].tolist()
         # TCS (48.5), ITC (26.0), INFY (31.2), HINDUNILVR (18.0 excluded), HDFCBANK (16.8 excluded)
@@ -265,14 +496,18 @@ class TestMinFilters:
         assert "HINDUNILVR" not in ids
         assert "VODAIDEA" not in ids
 
-    def test_fcf_min_filter(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_fcf_min_filter(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, free_cash_flow=10000)
         ids = result["company_id"].tolist()
         assert "TCS" in ids  # 38000
         assert "INFY" in ids  # 22000
         assert "VODAIDEA" not in ids  # -5000
 
-    def test_revenue_cagr_5yr_min(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_revenue_cagr_5yr_min(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, revenue_cagr_5yr=10.0)
         ids = result["company_id"].tolist()
         # TCS 11.5, RELIANCE 12.0, HDFCBANK 18.0, INFY 12.0, SBIN 14.0
@@ -284,7 +519,9 @@ class TestMinFilters:
         assert "ITC" not in ids  # 8.0
         assert "VODAIDEA" not in ids  # -5.0
 
-    def test_pat_cagr_5yr_min(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_pat_cagr_5yr_min(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, pat_cagr_5yr=10.0)
         ids = result["company_id"].tolist()
         assert "TCS" in ids  # 10.2
@@ -293,7 +530,9 @@ class TestMinFilters:
         assert "SBIN" in ids  # 22.0
         assert "RELIANCE" not in ids  # 8.5
 
-    def test_opm_min_filter(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_opm_min_filter(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, operating_profit_margin=25.0)
         ids = result["company_id"].tolist()
         # TCS 26.4, HDFCBANK 42.0, ITC 42.0, INFY 23.0 (excluded), SBIN 35.0
@@ -303,7 +542,9 @@ class TestMinFilters:
         assert "SBIN" in ids
         assert "INFY" not in ids
 
-    def test_market_cap_min(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_market_cap_min(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, market_cap=1000000)
         ids = result["company_id"].tolist()
         assert "TCS" in ids  # 1450000
@@ -311,7 +552,9 @@ class TestMinFilters:
         assert "HDFCBANK" in ids  # 1250000
         assert "ITC" not in ids  # 560000
 
-    def test_net_profit_min(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_net_profit_min(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, net_profit=30000)
         ids = result["company_id"].tolist()
         assert "TCS" in ids  # 46000
@@ -319,7 +562,9 @@ class TestMinFilters:
         assert "HDFCBANK" in ids  # 62700
         assert "INFY" not in ids  # 28800
 
-    def test_eps_cagr_5yr_min(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_eps_cagr_5yr_min(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, eps_cagr_5yr=10.0)
         ids = result["company_id"].tolist()
         assert "TCS" in ids  # 10.0
@@ -328,7 +573,9 @@ class TestMinFilters:
         assert "HDFCBANK" in ids  # 14.0
         assert "RELIANCE" not in ids  # 8.0
 
-    def test_asset_turnover_min(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_asset_turnover_min(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, asset_turnover=0.8)
         ids = result["company_id"].tolist()
         assert "TCS" in ids  # 0.92
@@ -343,7 +590,9 @@ class TestMinFilters:
         assert "INFY" in ids  # 165000
         assert "ITC" not in ids  # 70000
 
-    def test_dividend_yield_min(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_dividend_yield_min(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, dividend_yield=2.0)
         ids = result["company_id"].tolist()
         assert "ITC" in ids  # 3.2
@@ -389,7 +638,9 @@ class TestMaxFilters:
 class TestDeFinancialsSkip:
     """D/E filter automatically skips Financials sector companies."""
 
-    def test_financials_excluded_from_de_filter(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_financials_excluded_from_de_filter(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """HDFCBANK (D/E 5.8) and SBIN (D/E 7.2) should survive D/E < 1.0 filter."""
         result = engine.apply(sample_df, add_score=False, debt_to_equity=1.0)
         ids = result["company_id"].tolist()
@@ -402,23 +653,41 @@ class TestDeFinancialsSkip:
         assert "RELIANCE" in ids  # D/E 0.65
         assert "VODAIDEA" not in ids  # D/E 8.5, NOT financial
 
-    def test_financials_with_nbfc_alias(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_financials_with_nbfc_alias(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """Test that sector_id matching works for alias 'NBMC' etc."""
         df = sample_df.copy()
         # Add a NBFC company
         nbfc_row = {
-            "company_id": "BAJFINANCE", "company_name": "Bajaj Finance",
-            "year": "2024", "sector_id": "NBFC", "broad_sector": "Financials",
-            "roe": 22.0, "roce": 12.0, "net_profit_margin": 22.0,
-            "operating_profit_margin": 55.0, "interest_coverage_ratio": 2.0,
-            "debt_to_equity": 6.5, "asset_turnover": 0.12,
-            "pe_ratio": 35.0, "pb_ratio": 5.5, "dividend_yield": 0.5,
-            "dividend_payout_ratio": 18.0, "market_cap": 450000,
-            "net_sales": 55000, "net_profit": 12100, "eps": 212.0,
-            "free_cash_flow": 8000, "cfo_quality_score": 100.0,
-            "fcf_conversion_rate": 35.0, "revenue_cagr_5yr": 25.0,
-            "pat_cagr_5yr": 22.0, "eps_cagr_5yr": 20.0,
-            "is_debt_free": 0, "composite_quality_score": None,
+            "company_id": "BAJFINANCE",
+            "company_name": "Bajaj Finance",
+            "year": "2024",
+            "sector_id": "NBFC",
+            "broad_sector": "Financials",
+            "roe": 22.0,
+            "roce": 12.0,
+            "net_profit_margin": 22.0,
+            "operating_profit_margin": 55.0,
+            "interest_coverage_ratio": 2.0,
+            "debt_to_equity": 6.5,
+            "asset_turnover": 0.12,
+            "pe_ratio": 35.0,
+            "pb_ratio": 5.5,
+            "dividend_yield": 0.5,
+            "dividend_payout_ratio": 18.0,
+            "market_cap": 450000,
+            "net_sales": 55000,
+            "net_profit": 12100,
+            "eps": 212.0,
+            "free_cash_flow": 8000,
+            "cfo_quality_score": 100.0,
+            "fcf_conversion_rate": 35.0,
+            "revenue_cagr_5yr": 25.0,
+            "pat_cagr_5yr": 22.0,
+            "eps_cagr_5yr": 20.0,
+            "is_debt_free": 0,
+            "composite_quality_score": None,
         }
         df = pd.concat([df, pd.DataFrame([nbfc_row])], ignore_index=True)
 
@@ -426,7 +695,9 @@ class TestDeFinancialsSkip:
         ids = result["company_id"].tolist()
         assert "BAJFINANCE" in ids  # NBFC sector -> auto-skipped from D/E
 
-    def test_non_financials_filtered_by_de(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_non_financials_filtered_by_de(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """Non-financial companies with high D/E are correctly filtered."""
         result = engine.apply(sample_df, add_score=False, debt_to_equity=0.5)
         ids = result["company_id"].tolist()
@@ -448,7 +719,7 @@ class TestDeFinancialsSkip:
         ids = result["company_id"].tolist()
         # Financials with D/E > 0 are NOT exempt when checking D/E=0
         assert "HDFCBANK" not in ids  # D/E 5.8
-        assert "SBIN" not in ids      # D/E 7.2
+        assert "SBIN" not in ids  # D/E 7.2
         # Only truly debt-free companies pass
         assert "TCS" in ids
         assert "INFY" in ids
@@ -465,7 +736,9 @@ class TestDeFinancialsSkip:
 class TestIcrDebtFreeHandling:
     """ICR filter: debt-free companies always pass any ICR threshold."""
 
-    def test_debt_free_passes_any_icr_threshold(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_debt_free_passes_any_icr_threshold(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """TCS (debt-free, ICR=None) should pass ICR >= 5.0."""
         result = engine.apply(sample_df, add_score=False, interest_coverage_ratio=5.0)
         ids = result["company_id"].tolist()
@@ -476,7 +749,9 @@ class TestIcrDebtFreeHandling:
         assert "RELIANCE" not in ids  # ICR 4.2 < 5
         assert "VODAIDEA" not in ids  # ICR 0.5 < 5
 
-    def test_debt_free_with_zero_de_passes_icr(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_debt_free_with_zero_de_passes_icr(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """Companies with D/E = 0 (but is_debt_free not set) still pass."""
         result = engine.apply(sample_df, add_score=False, interest_coverage_ratio=10.0)
         ids = result["company_id"].tolist()
@@ -484,13 +759,17 @@ class TestIcrDebtFreeHandling:
         assert "INFY" in ids  # D/E 0
         assert "ITC" in ids  # ICR 12.5 >= 10
 
-    def test_non_debt_free_fails_low_icr(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_non_debt_free_fails_low_icr(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """VODAIDEA (ICR 0.5, not debt-free) fails ICR >= 5.0."""
         result = engine.apply(sample_df, add_score=False, interest_coverage_ratio=5.0)
         ids = result["company_id"].tolist()
         assert "VODAIDEA" not in ids
 
-    def test_financials_with_null_icr_handled(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_financials_with_null_icr_handled(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """HDFCBANK (ICR=None, D/E 5.8, not debt-free) fails ICR filter."""
         result = engine.apply(sample_df, add_score=False, interest_coverage_ratio=5.0)
         ids = result["company_id"].tolist()
@@ -518,7 +797,9 @@ class TestCompositeScore:
 
     def test_handles_missing_scoring_columns(self, sample_df):
         minimal = sample_df[["company_name", "broad_sector"]].copy()
-        result = FilterEngine.compute_composite_score(minimal, sector_col="broad_sector")
+        result = FilterEngine.compute_composite_score(
+            minimal, sector_col="broad_sector"
+        )
         assert len(result) == len(minimal)
         # No metrics → all categories neutral → composite = 50.0
         assert (result == 50.0).all()
@@ -536,22 +817,32 @@ class TestCompositeScore:
 class TestSorting:
     """Sorting and ordering tests."""
 
-    def test_default_sort_desc_by_score(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_default_sort_desc_by_score(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=True)
         non_nan = result["composite_quality_score"].dropna()
         assert list(non_nan) == sorted(non_nan, reverse=True)
 
-    def test_custom_sort_column(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_custom_sort_column(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, sort_by="roe")
         valid_roe = result["roe"].dropna()
         assert list(valid_roe) == sorted(valid_roe, reverse=True)
 
-    def test_ascending_sort(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
-        result = engine.apply(sample_df, add_score=False, sort_by="debt_to_equity", ascending=True)
+    def test_ascending_sort(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
+        result = engine.apply(
+            sample_df, add_score=False, sort_by="debt_to_equity", ascending=True
+        )
         valid_de = result["debt_to_equity"].dropna()
         assert list(valid_de) == sorted(valid_de)
 
-    def test_nan_at_end_when_descending(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_nan_at_end_when_descending(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, sort_by="roe")
         # ROE=None (VODAIDEA) should be at the end
         last_row = result.iloc[-1]
@@ -567,13 +858,28 @@ class TestEmptyDataFrame:
     """Edge case: empty input DataFrame."""
 
     def test_empty_df_returns_empty(self, engine: FilterEngine) -> None:
-        df = pd.DataFrame(columns=[
-            "company_id", "roe", "debt_to_equity", "free_cash_flow",
-            "revenue_cagr_5yr", "pat_cagr_5yr", "operating_profit_margin",
-            "pe_ratio", "pb_ratio", "dividend_yield", "interest_coverage_ratio",
-            "market_cap", "net_profit", "eps_cagr_5yr", "asset_turnover",
-            "net_sales", "broad_sector", "is_debt_free",
-        ])
+        df = pd.DataFrame(
+            columns=[
+                "company_id",
+                "roe",
+                "debt_to_equity",
+                "free_cash_flow",
+                "revenue_cagr_5yr",
+                "pat_cagr_5yr",
+                "operating_profit_margin",
+                "pe_ratio",
+                "pb_ratio",
+                "dividend_yield",
+                "interest_coverage_ratio",
+                "market_cap",
+                "net_profit",
+                "eps_cagr_5yr",
+                "asset_turnover",
+                "net_sales",
+                "broad_sector",
+                "is_debt_free",
+            ]
+        )
         result = engine.apply(df, roe=15)
         assert len(result) == 0
 
@@ -604,7 +910,9 @@ class TestPresets:
         with pytest.raises(KeyError, match="not found"):
             engine.get_preset("nonexistent_preset")
 
-    def test_apply_preset_filters_correctly(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_apply_preset_filters_correctly(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply_preset(sample_df, "quality_compounder")
         ids = result["company_id"].tolist()
         # Quality Compounder: ROE>15, D/E<1, FCF>0, Rev CAGR 5yr>10
@@ -619,7 +927,9 @@ class TestPresets:
         assert "ITC" not in ids  # Revenue CAGR 8.0 < 10
         assert "RELIANCE" not in ids  # ROE 8.5 < 15
 
-    def test_value_pick_preset(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_value_pick_preset(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply_preset(sample_df, "value_pick")
         ids = result["company_id"].tolist()
         # Value Pick: P/E<20, P/B<3, D/E<2, Div Yield>1%
@@ -646,7 +956,9 @@ class TestPresets:
 class TestMultipleFilters:
     """Test combining multiple filter overrides."""
 
-    def test_combined_roe_and_de_filters(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_combined_roe_and_de_filters(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         result = engine.apply(sample_df, add_score=False, roe=15.0, debt_to_equity=1.0)
         ids = result["company_id"].tolist()
         # ROE >= 15: TCS 48.5, HDFCBANK 16.8, ITC 26.0, INFY 31.2, HINDUNILVR 18.0, SBIN 18.5
@@ -662,16 +974,28 @@ class TestMultipleFilters:
         assert "RELIANCE" not in ids
         assert "VODAIDEA" not in ids
 
-    def test_all_15_filters_applied(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_all_15_filters_applied(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """Apply all 15 filters simultaneously — very restrictive."""
         result = engine.apply(
-            sample_df, add_score=False,
-            roe=20.0, debt_to_equity=1.0, free_cash_flow=10000,
-            revenue_cagr_5yr=10.0, pat_cagr_5yr=8.0,
-            operating_profit_margin=20.0, pe_ratio=30.0, pb_ratio=10.0,
-            dividend_yield=1.0, interest_coverage_ratio=5.0,
-            market_cap=500000, net_profit=10000, eps_cagr_5yr=8.0,
-            asset_turnover=0.5, net_sales=50000,
+            sample_df,
+            add_score=False,
+            roe=20.0,
+            debt_to_equity=1.0,
+            free_cash_flow=10000,
+            revenue_cagr_5yr=10.0,
+            pat_cagr_5yr=8.0,
+            operating_profit_margin=20.0,
+            pe_ratio=30.0,
+            pb_ratio=10.0,
+            dividend_yield=1.0,
+            interest_coverage_ratio=5.0,
+            market_cap=500000,
+            net_profit=10000,
+            eps_cagr_5yr=8.0,
+            asset_turnover=0.5,
+            net_sales=50000,
         )
         # Very restrictive — TCS excluded (P/E 32.5 > 30), only INFY passes
         # INFY: ROE 31.2✓, D/E 0✓, FCF 22000✓, RevCAGR 12✓, PATCAGR 11✓,
@@ -692,11 +1016,31 @@ class TestEdgeCases:
 
     def test_nan_in_filter_column_excluded(self, engine: FilterEngine) -> None:
         """Rows with NaN in the filtered column should be excluded."""
-        df = pd.DataFrame([
-            {"company_id": "A", "roe": 20.0, "debt_to_equity": 0.5, "broad_sector": "Tech", "is_debt_free": 0},
-            {"company_id": "B", "roe": None, "debt_to_equity": 0.5, "broad_sector": "Tech", "is_debt_free": 0},
-            {"company_id": "C", "roe": 25.0, "debt_to_equity": 0.5, "broad_sector": "Tech", "is_debt_free": 0},
-        ])
+        df = pd.DataFrame(
+            [
+                {
+                    "company_id": "A",
+                    "roe": 20.0,
+                    "debt_to_equity": 0.5,
+                    "broad_sector": "Tech",
+                    "is_debt_free": 0,
+                },
+                {
+                    "company_id": "B",
+                    "roe": None,
+                    "debt_to_equity": 0.5,
+                    "broad_sector": "Tech",
+                    "is_debt_free": 0,
+                },
+                {
+                    "company_id": "C",
+                    "roe": 25.0,
+                    "debt_to_equity": 0.5,
+                    "broad_sector": "Tech",
+                    "is_debt_free": 0,
+                },
+            ]
+        )
         result = engine.apply(df, add_score=False, roe=15.0)
         ids = result["company_id"].tolist()
         assert "A" in ids
@@ -705,45 +1049,79 @@ class TestEdgeCases:
 
     def test_missing_column_ignored(self, engine: FilterEngine) -> None:
         """Filtering on a column that doesn't exist should not crash."""
-        df = pd.DataFrame([
-            {"company_id": "A", "roe": 20.0, "broad_sector": "X", "is_debt_free": 0},
-        ])
+        df = pd.DataFrame(
+            [
+                {
+                    "company_id": "A",
+                    "roe": 20.0,
+                    "broad_sector": "X",
+                    "is_debt_free": 0,
+                },
+            ]
+        )
         # Should not raise — column 'nonexistent_col' not in df, so filter is a no-op
         result = engine.apply(df, add_score=False, **{"nonexistent_col": 10.0})
         assert len(result) == 1
 
-    def test_none_override_ignored(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_none_override_ignored(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """Passing None as override value should be skipped."""
         result = engine.apply(sample_df, add_score=False, roe=None)
         assert len(result) == len(sample_df)
 
-    def test_does_not_mutate_input(self, engine: FilterEngine, sample_df: pd.DataFrame) -> None:
+    def test_does_not_mutate_input(
+        self, engine: FilterEngine, sample_df: pd.DataFrame
+    ) -> None:
         """Original DataFrame should not be modified."""
         original_len = len(sample_df)
         original_cols = list(sample_df.columns)
         engine.apply(sample_df, roe=15.0)
         assert len(sample_df) == original_len
         assert list(sample_df.columns) == original_cols
-        assert "composite_quality_score" not in sample_df.columns or sample_df["composite_quality_score"].isna().all()
+        assert (
+            "composite_quality_score" not in sample_df.columns
+            or sample_df["composite_quality_score"].isna().all()
+        )
 
-    def test_sector_detection_falls_back_to_sector_id(self, engine: FilterEngine) -> None:
+    def test_sector_detection_falls_back_to_sector_id(
+        self, engine: FilterEngine
+    ) -> None:
         """If broad_sector is missing, fall back to sector_id for sector detection."""
-        df = pd.DataFrame([
-            {
-                "company_id": "FINCO", "company_name": "Fin Corp",
-                "year": "2024", "sector_id": "Financials", "broad_sector": None,
-                "roe": 15.0, "roce": 10.0, "net_profit_margin": 10.0,
-                "operating_profit_margin": 20.0, "interest_coverage_ratio": 3.0,
-                "debt_to_equity": 5.0, "asset_turnover": 0.1,
-                "pe_ratio": 15.0, "pb_ratio": 2.0, "dividend_yield": 2.0,
-                "dividend_payout_ratio": 30.0, "market_cap": 100000,
-                "net_sales": 50000, "net_profit": 5000, "eps": 10.0,
-                "free_cash_flow": 3000, "cfo_quality_score": 100.0,
-                "fcf_conversion_rate": 40.0, "revenue_cagr_5yr": 10.0,
-                "pat_cagr_5yr": 10.0, "eps_cagr_5yr": 10.0,
-                "is_debt_free": 0, "composite_quality_score": None,
-            },
-        ])
+        df = pd.DataFrame(
+            [
+                {
+                    "company_id": "FINCO",
+                    "company_name": "Fin Corp",
+                    "year": "2024",
+                    "sector_id": "Financials",
+                    "broad_sector": None,
+                    "roe": 15.0,
+                    "roce": 10.0,
+                    "net_profit_margin": 10.0,
+                    "operating_profit_margin": 20.0,
+                    "interest_coverage_ratio": 3.0,
+                    "debt_to_equity": 5.0,
+                    "asset_turnover": 0.1,
+                    "pe_ratio": 15.0,
+                    "pb_ratio": 2.0,
+                    "dividend_yield": 2.0,
+                    "dividend_payout_ratio": 30.0,
+                    "market_cap": 100000,
+                    "net_sales": 50000,
+                    "net_profit": 5000,
+                    "eps": 10.0,
+                    "free_cash_flow": 3000,
+                    "cfo_quality_score": 100.0,
+                    "fcf_conversion_rate": 40.0,
+                    "revenue_cagr_5yr": 10.0,
+                    "pat_cagr_5yr": 10.0,
+                    "eps_cagr_5yr": 10.0,
+                    "is_debt_free": 0,
+                    "composite_quality_score": None,
+                },
+            ]
+        )
         result = engine.apply(df, add_score=False, debt_to_equity=1.0)
         # Should pass D/E filter because sector_id="Financials"
         assert len(result) == 1
@@ -758,12 +1136,16 @@ class TestEdgeCases:
 class TestConvenienceFunctions:
     """Module-level convenience functions."""
 
-    def test_apply_filters_returns_filtered(self, tmp_config: Path, sample_df: pd.DataFrame) -> None:
+    def test_apply_filters_returns_filtered(
+        self, tmp_config: Path, sample_df: pd.DataFrame
+    ) -> None:
         result = apply_filters(sample_df, config_path=tmp_config, roe=20.0)
         assert len(result) < len(sample_df)
         assert "composite_quality_score" in result.columns
 
-    def test_apply_filters_no_overrides(self, tmp_config: Path, sample_df: pd.DataFrame) -> None:
+    def test_apply_filters_no_overrides(
+        self, tmp_config: Path, sample_df: pd.DataFrame
+    ) -> None:
         """No overrides = no filtering, but score still added and sorted."""
         result = apply_filters(sample_df, config_path=tmp_config)
         assert len(result) == len(sample_df)
@@ -786,19 +1168,39 @@ class TestFinancialSectorAliases:
 
     @pytest.mark.parametrize("sector", ["Financials", "FIN", "NBFC", "Banks"])
     def test_sector_alias_skips_de(self, engine: FilterEngine, sector: str) -> None:
-        df = pd.DataFrame([{
-            "company_id": f"TEST_{sector}", "company_name": f"Test {sector}",
-            "year": "2024", "sector_id": sector, "broad_sector": "X",
-            "roe": 10.0, "roce": 10.0, "net_profit_margin": 10.0,
-            "operating_profit_margin": 20.0, "interest_coverage_ratio": 2.0,
-            "debt_to_equity": 10.0, "asset_turnover": 0.1,
-            "pe_ratio": 15.0, "pb_ratio": 2.0, "dividend_yield": 1.0,
-            "dividend_payout_ratio": 30.0, "market_cap": 50000,
-            "net_sales": 10000, "net_profit": 1000, "eps": 10.0,
-            "free_cash_flow": 500, "cfo_quality_score": 100.0,
-            "fcf_conversion_rate": 30.0, "revenue_cagr_5yr": 5.0,
-            "pat_cagr_5yr": 5.0, "eps_cagr_5yr": 5.0,
-            "is_debt_free": 0, "composite_quality_score": None,
-        }])
+        df = pd.DataFrame(
+            [
+                {
+                    "company_id": f"TEST_{sector}",
+                    "company_name": f"Test {sector}",
+                    "year": "2024",
+                    "sector_id": sector,
+                    "broad_sector": "X",
+                    "roe": 10.0,
+                    "roce": 10.0,
+                    "net_profit_margin": 10.0,
+                    "operating_profit_margin": 20.0,
+                    "interest_coverage_ratio": 2.0,
+                    "debt_to_equity": 10.0,
+                    "asset_turnover": 0.1,
+                    "pe_ratio": 15.0,
+                    "pb_ratio": 2.0,
+                    "dividend_yield": 1.0,
+                    "dividend_payout_ratio": 30.0,
+                    "market_cap": 50000,
+                    "net_sales": 10000,
+                    "net_profit": 1000,
+                    "eps": 10.0,
+                    "free_cash_flow": 500,
+                    "cfo_quality_score": 100.0,
+                    "fcf_conversion_rate": 30.0,
+                    "revenue_cagr_5yr": 5.0,
+                    "pat_cagr_5yr": 5.0,
+                    "eps_cagr_5yr": 5.0,
+                    "is_debt_free": 0,
+                    "composite_quality_score": None,
+                }
+            ]
+        )
         result = engine.apply(df, add_score=False, debt_to_equity=1.0)
         assert len(result) == 1  # Should pass despite D/E 10.0

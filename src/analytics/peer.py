@@ -11,9 +11,7 @@ high percentile always means "better than peers".
 import sqlite3
 from typing import Optional
 
-import numpy as np
 import pandas as pd
-
 
 # ── Peer Group Definitions ────────────────────────────────────────────────────
 
@@ -85,6 +83,7 @@ PEER_LOWER_IS_BETTER: set[str] = {"debt_to_equity"}
 
 # ── Core Functions ────────────────────────────────────────────────────────────
 
+
 def resolve_peer_group(sector_series: pd.Series) -> pd.Series:
     """Map sub-sector labels to broad peer groups.
 
@@ -138,9 +137,7 @@ def compute_peer_percentiles(
                 records.append(
                     {
                         "company_id": (
-                            row[id_col]
-                            if id_col and id_col in df.columns
-                            else ""
+                            row[id_col] if id_col and id_col in df.columns else ""
                         ),
                         "company_name": row[name_col],
                         "year": int(year),
@@ -154,17 +151,22 @@ def compute_peer_percentiles(
 
     result = pd.DataFrame(records)
 
-    if not result.empty and "company_id" in result.columns and result["company_id"].eq("").all():
+    if (
+        not result.empty
+        and "company_id" in result.columns
+        and result["company_id"].eq("").all()
+    ):
         result = result.drop(columns=["company_id"])
 
     return result
 
+
 # ── SQLite Persistence ────────────────────────────────────────────────────────
+
 
 def create_peer_table(conn: sqlite3.Connection) -> None:
     """Create the ``peer_percentiles`` table if it does not exist."""
-    conn.execute(
-        """
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS peer_percentiles (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             company_name    TEXT    NOT NULL,
@@ -176,8 +178,7 @@ def create_peer_table(conn: sqlite3.Connection) -> None:
             peer_count      INTEGER,
             UNIQUE(company_name, year, metric_name)
         );
-        """
-    )
+        """)
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_peer_lookup "
         "ON peer_percentiles(company_name, year);"
@@ -209,8 +210,13 @@ def save_peer_percentiles(
 
     create_peer_table(conn)
     cols = [
-        "company_name", "year", "peer_group", "metric_name",
-        "raw_value", "percentile_rank", "peer_count",
+        "company_name",
+        "year",
+        "peer_group",
+        "metric_name",
+        "raw_value",
+        "percentile_rank",
+        "peer_count",
     ]
     # Only keep columns that exist
     write_cols = [c for c in cols if c in peer_df.columns]
@@ -254,6 +260,7 @@ def load_peer_percentiles(
 
 # ── Query Helpers ─────────────────────────────────────────────────────────────
 
+
 def get_peer_summary(
     conn: sqlite3.Connection,
     company_name: str,
@@ -272,7 +279,11 @@ def get_peer_group_members(
     if isinstance(conn, pd.DataFrame):
         df = conn.copy()
         sector_col = next(
-            (col for col in ("peer_group", "_peer_group", "broad_sector", "sector") if col in df.columns),
+            (
+                col
+                for col in ("peer_group", "_peer_group", "broad_sector", "sector")
+                if col in df.columns
+            ),
             None,
         )
         if sector_col is None or "company_name" not in df.columns:
@@ -313,9 +324,7 @@ def get_top_performers(
         "ORDER BY percentile_rank DESC "
         "LIMIT ?"
     )
-    return pd.read_sql_query(
-        query, conn, params=[peer_group, metric_name, year, top_n]
-    )
+    return pd.read_sql_query(query, conn, params=[peer_group, metric_name, year, top_n])
 
 
 def get_bottom_performers(

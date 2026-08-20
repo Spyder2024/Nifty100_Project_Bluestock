@@ -8,10 +8,7 @@ Verifies:
 3. Sector counts and constituent distributions match between Dashboard and API.
 """
 
-from pathlib import Path
 from fastapi.testclient import TestClient
-import pandas as pd
-import pytest
 
 from src.api.main import app
 from src.dashboard.utils.db import get_all_ratios, get_companies, get_sectors
@@ -60,7 +57,9 @@ def test_screener_dashboard_and_api_congruence():
 
     # 2. Direct DB / Dashboard layer check
     ratios_df = get_all_ratios("2024")
-    filtered_dash = ratios_df[(ratios_df["roe"] >= 20.0) & (ratios_df["debt_to_equity"] <= 1.0)]
+    filtered_dash = ratios_df[
+        (ratios_df["roe"] >= 20.0) & (ratios_df["debt_to_equity"] <= 1.0)
+    ]
     dash_tickers = set(filtered_dash["company_id"].dropna().unique())
 
     # Verify high congruence (>90% match due to latest year fallback)

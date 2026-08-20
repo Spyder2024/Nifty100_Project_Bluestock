@@ -17,10 +17,10 @@ from __future__ import annotations
 
 from typing import Optional
 
-
 # ---------------------------------------------------------------------------
 # Core CAGR formula with edge-case detection
 # ---------------------------------------------------------------------------
+
 
 def cagr(
     start_value: Optional[float],
@@ -69,6 +69,7 @@ def cagr(
 # Window-based CAGR from yearly time-series data
 # ---------------------------------------------------------------------------
 
+
 def compute_cagr_window(
     yearly_data: list[tuple[str, Optional[float]]],
     window: int,
@@ -91,9 +92,7 @@ def compute_cagr_window(
     4.  Delegate to :func:`cagr` for formula + edge-case handling.
     """
     # Filter and sort
-    valid: list[tuple[str, float]] = [
-        (y, v) for y, v in yearly_data if v is not None
-    ]
+    valid: list[tuple[str, float]] = [(y, v) for y, v in yearly_data if v is not None]
     valid.sort(key=lambda pair: pair[0])
 
     if len(valid) < 2:
@@ -125,6 +124,7 @@ def compute_cagr_window(
 # ---------------------------------------------------------------------------
 # Convenience: compute all three windows for one metric
 # ---------------------------------------------------------------------------
+
 
 def compute_all_cagrs(
     yearly_data: list[tuple[str, Optional[float]]],

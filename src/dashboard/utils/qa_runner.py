@@ -68,6 +68,7 @@ def _section(title: str) -> None:
 
 # ── Shared: discover actual table names from DB ───────────────────────────
 
+
 def _discover_tables(conn: sqlite3.Connection) -> list[str]:
     """Return sorted list of user table names (skip sqlite internals)."""
     return [
@@ -90,8 +91,12 @@ def _find_ratios_table(tables: list[str]) -> str | None:
 def _find_ticker_column(df: pd.DataFrame) -> str | None:
     """Detect the column used as company identifier (ticker/symbol/name)."""
     aliases = (
-        "ticker", "symbol", "ticker_symbol",
-        "stock_code", "nse_symbol", "company_ticker",
+        "ticker",
+        "symbol",
+        "ticker_symbol",
+        "stock_code",
+        "nse_symbol",
+        "company_ticker",
         "company_name",
     )
     for col in aliases:
@@ -103,6 +108,7 @@ def _find_ticker_column(df: pd.DataFrame) -> str | None:
 # ────────────────────────────────────────────────────────────────────────────
 # 1. DB connectivity
 # ────────────────────────────────────────────────────────────────────────────
+
 
 def test_db_connectivity(conn: sqlite3.Connection, tables: list[str]) -> None:
     _section("1. DB Connectivity & Schema")
@@ -121,14 +127,19 @@ def test_db_connectivity(conn: sqlite3.Connection, tables: list[str]) -> None:
     if "financial_ratios" not in tables and "ratios" not in tables:
         ratio_like = [t for t in tables if "ratio" in t.lower()]
         if ratio_like:
-            _record("Ratio table alias found", True, f"Candidates: {', '.join(ratio_like)}")
+            _record(
+                "Ratio table alias found", True, f"Candidates: {', '.join(ratio_like)}"
+            )
         else:
-            _record("Ratio table alias found", False, f"No ratio-like table. All: {tables}")
+            _record(
+                "Ratio table alias found", False, f"No ratio-like table. All: {tables}"
+            )
 
 
 # ────────────────────────────────────────────────────────────────────────────
 # 2. Query functions
 # ────────────────────────────────────────────────────────────────────────────
+
 
 def test_query_functions() -> None:
     _section("2. Cached Query Functions")
@@ -137,8 +148,16 @@ def test_query_functions() -> None:
     t0 = time.perf_counter()
     companies = get_companies()
     dt = (time.perf_counter() - t0) * 1000
-    ok = companies is not None and isinstance(companies, pd.DataFrame) and not companies.empty
-    _record("get_companies()", ok, f"{len(companies)} rows, {dt:.1f}ms" if ok else str(type(companies)))
+    ok = (
+        companies is not None
+        and isinstance(companies, pd.DataFrame)
+        and not companies.empty
+    )
+    _record(
+        "get_companies()",
+        ok,
+        f"{len(companies)} rows, {dt:.1f}ms" if ok else str(type(companies)),
+    )
 
     if not ok:
         _record("Remaining query tests", False, "Skipped — no companies data")
@@ -252,6 +271,7 @@ def test_query_functions() -> None:
 # 3. Cross-table consistency
 # ────────────────────────────────────────────────────────────────────────────
 
+
 def test_cross_table_consistency(
     conn: sqlite3.Connection,
     tables: list[str],
@@ -302,6 +322,7 @@ def test_cross_table_consistency(
 # 4. Null audit (data quality — separate from code correctness)
 # ────────────────────────────────────────────────────────────────────────────
 
+
 def test_null_audit(conn: sqlite3.Connection, tables: list[str]) -> None:
     _section("4. Null Audit Across Tables (Data Quality)")
 
@@ -343,6 +364,7 @@ def test_null_audit(conn: sqlite3.Connection, tables: list[str]) -> None:
 # 5. PyArrow dtype compatibility
 # ────────────────────────────────────────────────────────────────────────────
 
+
 def test_pyarrow_compat() -> None:
     _section("5. PyArrow Dtype Compatibility")
 
@@ -364,7 +386,9 @@ def test_pyarrow_compat() -> None:
 
     try:
         _ = numeric.fillna(0).abs()
-        _record("fillna(0).abs() safe", True, f"Tested on {numeric.shape[1]} numeric cols")
+        _record(
+            "fillna(0).abs() safe", True, f"Tested on {numeric.shape[1]} numeric cols"
+        )
     except TypeError as e:
         _record("fillna(0).abs() safe", False, str(e))
 
@@ -381,6 +405,7 @@ def test_pyarrow_compat() -> None:
 # ────────────────────────────────────────────────────────────────────────────
 # 6. Page import check
 # ────────────────────────────────────────────────────────────────────────────
+
 
 def test_page_imports() -> None:
     _section("6. Page Import Check")
@@ -407,9 +432,10 @@ def test_page_imports() -> None:
 # Main
 # ────────────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     print(f"\n{'=' * 60}")
-    print(f"  Nifty-100 Dashboard — Integration QA")
+    print("  Nifty-100 Dashboard — Integration QA")
     print(f"  DB: {DB_PATH}")
     print(f"{'=' * 60}")
 

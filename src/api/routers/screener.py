@@ -12,9 +12,9 @@ Endpoints:
 from __future__ import annotations
 
 import sqlite3
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query
 
 from src.api.routers.health import get_db_path
 
@@ -45,12 +45,16 @@ def _validate_screener_params(
             status_code=400,
             detail=f"Invalid max_pe value: {max_pe}. Expected positive number.",
         )
-    if min_rev_cagr_5yr is not None and (min_rev_cagr_5yr < -100.0 or min_rev_cagr_5yr > 10000.0):
+    if min_rev_cagr_5yr is not None and (
+        min_rev_cagr_5yr < -100.0 or min_rev_cagr_5yr > 10000.0
+    ):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid min_rev_cagr_5yr value: {min_rev_cagr_5yr}.",
         )
-    if min_pat_cagr_5yr is not None and (min_pat_cagr_5yr < -100.0 or min_pat_cagr_5yr > 10000.0):
+    if min_pat_cagr_5yr is not None and (
+        min_pat_cagr_5yr < -100.0 or min_pat_cagr_5yr > 10000.0
+    ):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid min_pat_cagr_5yr value: {min_pat_cagr_5yr}.",
@@ -61,11 +65,19 @@ def _validate_screener_params(
 async def run_screener(
     min_roe: Optional[float] = Query(None, description="Minimum Return on Equity (%)"),
     max_de: Optional[float] = Query(None, description="Maximum Debt to Equity"),
-    min_fcf: Optional[float] = Query(None, description="Minimum Free Cash Flow in ₹ Cr"),
+    min_fcf: Optional[float] = Query(
+        None, description="Minimum Free Cash Flow in ₹ Cr"
+    ),
     sector: Optional[str] = Query(None, description="Filter by sector name"),
-    min_rev_cagr_5yr: Optional[float] = Query(None, description="Minimum 5-Yr Revenue CAGR (%)"),
-    min_pat_cagr_5yr: Optional[float] = Query(None, description="Minimum 5-Yr PAT/Net Profit CAGR (%)"),
-    max_pe: Optional[float] = Query(None, description="Maximum Price to Earnings multiple"),
+    min_rev_cagr_5yr: Optional[float] = Query(
+        None, description="Minimum 5-Yr Revenue CAGR (%)"
+    ),
+    min_pat_cagr_5yr: Optional[float] = Query(
+        None, description="Minimum 5-Yr PAT/Net Profit CAGR (%)"
+    ),
+    max_pe: Optional[float] = Query(
+        None, description="Maximum Price to Earnings multiple"
+    ),
     limit: int = Query(50, ge=1, le=100, description="Limit results"),
     offset: int = Query(0, ge=0, description="Offset results"),
 ) -> Dict[str, Any]:
@@ -88,22 +100,29 @@ async def run_screener(
     conn.row_factory = sqlite3.Row
     try:
         # Fetch all companies with latest financials, CAGR, and valuation multiples
-        companies = conn.execute(
-            """
+        companies = conn.execute("""
             SELECT c.company_id, c.company_name, s.sector_name AS sector
             FROM companies c
             LEFT JOIN sectors s ON c.sector_id = s.sector_id
             ORDER BY c.company_id ASC
-            """
-        ).fetchall()
+            """).fetchall()
 
-        ratios_all = conn.execute("SELECT * FROM ratios ORDER BY company_id, year DESC").fetchall()
-        is_all = conn.execute("SELECT * FROM income_statement ORDER BY company_id, year ASC").fetchall()
-        cf_all = conn.execute("SELECT * FROM cash_flow ORDER BY company_id, year ASC").fetchall()
-        mcap_all = conn.execute("SELECT * FROM market_cap ORDER BY company_id, year DESC").fetchall()
+        ratios_all = conn.execute(
+            "SELECT * FROM ratios ORDER BY company_id, year DESC"
+        ).fetchall()
+        is_all = conn.execute(
+            "SELECT * FROM income_statement ORDER BY company_id, year ASC"
+        ).fetchall()
+        cf_all = conn.execute(
+            "SELECT * FROM cash_flow ORDER BY company_id, year ASC"
+        ).fetchall()
+        mcap_all = conn.execute(
+            "SELECT * FROM market_cap ORDER BY company_id, year DESC"
+        ).fetchall()
 
         # Group data by company
         from collections import defaultdict
+
         ratios_by_co = defaultdict(list)
         for r in ratios_all:
             ratios_by_co[r["company_id"]].append(dict(r))
@@ -155,7 +174,9 @@ async def run_screener(
 
             fcf = latest_cf.get("fcf")
             if fcf is None and latest_cf:
-                fcf = (latest_cf.get("operating_cf") or 0.0) - (latest_cf.get("capex") or 0.0)
+                fcf = (latest_cf.get("operating_cf") or 0.0) - (
+                    latest_cf.get("capex") or 0.0
+                )
 
             # Revenue 5Y CAGR
             rev_cagr = None
@@ -200,28 +221,43 @@ async def run_screener(
                 continue
             if min_fcf is not None and (fcf is None or fcf < min_fcf):
                 continue
-            if min_rev_cagr_5yr is not None and (rev_cagr is None or rev_cagr < min_rev_cagr_5yr):
+            if min_rev_cagr_5yr is not None and (
+                rev_cagr is None or rev_cagr < min_rev_cagr_5yr
+            ):
                 continue
-            if min_pat_cagr_5yr is not None and (pat_cagr is None or pat_cagr < min_pat_cagr_5yr):
+            if min_pat_cagr_5yr is not None and (
+                pat_cagr is None or pat_cagr < min_pat_cagr_5yr
+            ):
                 continue
             if max_pe is not None and (pe is None or pe > max_pe):
                 continue
 
             # Composite rank score (higher is better)
-            score = (roe or 0.0) * 0.4 + (opm or 0.0) * 0.3 + (rev_cagr or 0.0) * 0.3 - (de or 0.0) * 5.0
+            score = (
+                (roe or 0.0) * 0.4
+                + (opm or 0.0) * 0.3
+                + (rev_cagr or 0.0) * 0.3
+                - (de or 0.0) * 5.0
+            )
 
-            matched_records.append({
-                "company_id": cid,
-                "company_name": comp["company_name"],
-                "sector": sec_name,
-                "roe": round(roe, 2) if roe is not None else None,
-                "debt_to_equity": round(de, 2) if de is not None else None,
-                "fcf_cr": round(fcf, 2) if fcf is not None else None,
-                "revenue_cagr_5yr": round(rev_cagr, 2) if rev_cagr is not None else None,
-                "pat_cagr_5yr": round(pat_cagr, 2) if pat_cagr is not None else None,
-                "pe_ratio": round(pe, 2) if pe is not None else None,
-                "score": round(score, 2),
-            })
+            matched_records.append(
+                {
+                    "company_id": cid,
+                    "company_name": comp["company_name"],
+                    "sector": sec_name,
+                    "roe": round(roe, 2) if roe is not None else None,
+                    "debt_to_equity": round(de, 2) if de is not None else None,
+                    "fcf_cr": round(fcf, 2) if fcf is not None else None,
+                    "revenue_cagr_5yr": (
+                        round(rev_cagr, 2) if rev_cagr is not None else None
+                    ),
+                    "pat_cagr_5yr": (
+                        round(pat_cagr, 2) if pat_cagr is not None else None
+                    ),
+                    "pe_ratio": round(pe, 2) if pe is not None else None,
+                    "score": round(score, 2),
+                }
+            )
 
         # Sort by composite score descending
         matched_records.sort(key=lambda x: x["score"], reverse=True)

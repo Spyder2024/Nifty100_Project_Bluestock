@@ -7,10 +7,7 @@ Verifies:
 2. Simultaneous execution of API requests and Dashboard data-loading queries without thread locking or database corruption.
 """
 
-import socket
-from pathlib import Path
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 from src.dashboard.utils.db import get_all_ratios, get_companies, get_sectors

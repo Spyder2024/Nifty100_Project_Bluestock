@@ -252,6 +252,7 @@ FINANCIAL_TABLES = {
 # Core helpers
 # ===================================================================
 
+
 def get_connection(db_path: str) -> sqlite3.Connection:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
@@ -284,10 +285,16 @@ def _rename_columns(df: pd.DataFrame, col_map: dict) -> pd.DataFrame:
 # Table-specific loaders
 # ===================================================================
 
+
 def load_sectors(conn: sqlite3.Connection, df: pd.DataFrame) -> int:
     count = 0
     for _, row in df.iterrows():
-        raw = row.get("sector_name") or row.get("sector") or row.get("name") or row.get("broad_sector")
+        raw = (
+            row.get("sector_name")
+            or row.get("sector")
+            or row.get("name")
+            or row.get("broad_sector")
+        )
         if not raw or pd.isna(raw):
             continue
         name = str(raw).strip()
@@ -375,9 +382,7 @@ def load_financial_table(
     count = 0
     errors = 0
     for _, row in df.iterrows():
-        vals = [
-            None if pd.isna(row.get(c)) else row.get(c) for c in insert_cols
-        ]
+        vals = [None if pd.isna(row.get(c)) else row.get(c) for c in insert_cols]
         try:
             conn.execute(sql, vals)
             count += 1
@@ -385,8 +390,11 @@ def load_financial_table(
             errors += 1
             if errors <= 5:
                 logger.warning(
-                    "%s PK clash %s/%s: %s", table_name, row.get("company_id"),
-                    row.get("year"), exc,
+                    "%s PK clash %s/%s: %s",
+                    table_name,
+                    row.get("company_id"),
+                    row.get("year"),
+                    exc,
                 )
         except sqlite3.OperationalError as exc:
             logger.error("%s SQL error: %s  SQL=%s", table_name, exc, sql)
@@ -399,6 +407,7 @@ def load_financial_table(
 # ===================================================================
 # Orchestrator
 # ===================================================================
+
 
 def run_full_load(
     db_path: str,
@@ -437,8 +446,15 @@ def run_full_load(
                 .to_dict()
             )
             c_df["sector_id"] = c_df["company_id"].map(
-                lambda cid: str(sec_map.get(cid, "")).strip().upper().replace(" ", "_").replace("&", "AND")
-                if sec_map.get(cid) else None
+                lambda cid: (
+                    str(sec_map.get(cid, ""))
+                    .strip()
+                    .upper()
+                    .replace(" ", "_")
+                    .replace("&", "AND")
+                    if sec_map.get(cid)
+                    else None
+                )
             )
         results["companies"] = load_companies(conn, c_df)
     except Exception as exc:
@@ -473,9 +489,15 @@ def run_full_load(
         try:
             df = load_support_file(file_name)
             df = normalise_company_id(df)
-            if table_name == "prices" and "year" not in df.columns and "date" in df.columns:
+            if (
+                table_name == "prices"
+                and "year" not in df.columns
+                and "date" in df.columns
+            ):
                 dt = pd.to_datetime(df["date"])
-                df["year"] = dt.dt.year.astype(str) + "-" + dt.dt.month.astype(str).str.zfill(2)
+                df["year"] = (
+                    dt.dt.year.astype(str) + "-" + dt.dt.month.astype(str).str.zfill(2)
+                )
             else:
                 df = normalise_year_column(df)
             results[table_name] = load_financial_table(

@@ -55,11 +55,16 @@ def _get_company_or_404(conn: sqlite3.Connection, ticker: str) -> sqlite3.Row:
 # 1. GET /api/v1/companies
 # ===========================================================================
 
+
 @router.get("", summary="List All Nifty 100 Companies")
 async def list_companies(
     sector: Optional[str] = Query(None, description="Filter by sector or broad_sector"),
-    market_cap_category: Optional[str] = Query(None, description="Filter by Large Cap / Mid Cap"),
-    search: Optional[str] = Query(None, description="Partial search by ticker or company name"),
+    market_cap_category: Optional[str] = Query(
+        None, description="Filter by Large Cap / Mid Cap"
+    ),
+    search: Optional[str] = Query(
+        None, description="Partial search by ticker or company name"
+    ),
     limit: int = Query(100, ge=1, le=200, description="Max items per page"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
 ) -> Dict[str, Any]:
@@ -144,6 +149,7 @@ async def list_companies(
 # 2. GET /api/v1/companies/{ticker}
 # ===========================================================================
 
+
 @router.get("/{ticker}", summary="Get Full Company Profile")
 async def get_company_profile(ticker: str) -> Dict[str, Any]:
     """Return full company profile: company fields + latest year KPIs + sector data."""
@@ -187,7 +193,11 @@ async def get_company_profile(ticker: str) -> Dict[str, Any]:
             (cid,),
         ).fetchone()
 
-        mcap_cr = latest_mcap["market_cap_cr"] if latest_mcap and latest_mcap["market_cap_cr"] else None
+        mcap_cr = (
+            latest_mcap["market_cap_cr"]
+            if latest_mcap and latest_mcap["market_cap_cr"]
+            else None
+        )
         mcap_cat = "Large Cap" if (mcap_cr is None or mcap_cr >= 20000.0) else "Mid Cap"
 
         return {
@@ -208,20 +218,40 @@ async def get_company_profile(ticker: str) -> Dict[str, Any]:
             "latest_balance_sheet": dict(latest_bs) if latest_bs else {},
             "latest_cash_flow": dict(latest_cf) if latest_cf else {},
             "latest_kpis": {
-                "year": latest_ratio["year"] if latest_ratio else (latest_is["year"] if latest_is else None),
+                "year": (
+                    latest_ratio["year"]
+                    if latest_ratio
+                    else (latest_is["year"] if latest_is else None)
+                ),
                 "roe_pct": latest_ratio["roe"] if latest_ratio else None,
                 "roce_pct": latest_ratio["roce"] if latest_ratio else None,
                 "opm_pct": latest_ratio["opm"] if latest_ratio else None,
-                "net_profit_margin_pct": latest_ratio["net_profit_margin"] if latest_ratio else None,
-                "debt_to_equity": latest_ratio["debt_to_equity"] if latest_ratio else None,
-                "interest_coverage": latest_ratio["interest_coverage"] if latest_ratio else None,
-                "asset_turnover": latest_ratio["asset_turnover"] if latest_ratio else None,
-                "price_to_earnings": latest_ratio["price_to_earnings"] if latest_ratio else None,
-                "price_to_book": latest_ratio["price_to_book"] if latest_ratio else None,
+                "net_profit_margin_pct": (
+                    latest_ratio["net_profit_margin"] if latest_ratio else None
+                ),
+                "debt_to_equity": (
+                    latest_ratio["debt_to_equity"] if latest_ratio else None
+                ),
+                "interest_coverage": (
+                    latest_ratio["interest_coverage"] if latest_ratio else None
+                ),
+                "asset_turnover": (
+                    latest_ratio["asset_turnover"] if latest_ratio else None
+                ),
+                "price_to_earnings": (
+                    latest_ratio["price_to_earnings"] if latest_ratio else None
+                ),
+                "price_to_book": (
+                    latest_ratio["price_to_book"] if latest_ratio else None
+                ),
                 "revenue_latest_cr": latest_is["revenue"] if latest_is else None,
                 "net_income_latest_cr": latest_is["net_income"] if latest_is else None,
-                "total_equity_latest_cr": latest_bs["total_equity"] if latest_bs else None,
-                "operating_cf_latest_cr": latest_cf["operating_cf"] if latest_cf else None,
+                "total_equity_latest_cr": (
+                    latest_bs["total_equity"] if latest_bs else None
+                ),
+                "operating_cf_latest_cr": (
+                    latest_cf["operating_cf"] if latest_cf else None
+                ),
                 "fcf_latest_cr": latest_cf["fcf"] if latest_cf else None,
             },
         }
@@ -233,11 +263,16 @@ async def get_company_profile(ticker: str) -> Dict[str, Any]:
 # 3. GET /api/v1/companies/{ticker}/pl
 # ===========================================================================
 
+
 @router.get("/{ticker}/pl", summary="Get Profit & Loss / Income Statement History")
 async def get_company_pl(
     ticker: str,
-    from_year: Optional[str] = Query(None, description="Start year in YYYY-MM or YYYY format"),
-    to_year: Optional[str] = Query(None, description="End year in YYYY-MM or YYYY format"),
+    from_year: Optional[str] = Query(
+        None, description="Start year in YYYY-MM or YYYY format"
+    ),
+    to_year: Optional[str] = Query(
+        None, description="End year in YYYY-MM or YYYY format"
+    ),
 ) -> Dict[str, Any]:
     """Return historical Profit & Loss / Income Statement data for the given company."""
     db_path = get_db_path()
@@ -277,11 +312,16 @@ async def get_company_pl(
 # 4. GET /api/v1/companies/{ticker}/bs
 # ===========================================================================
 
+
 @router.get("/{ticker}/bs", summary="Get Balance Sheet History")
 async def get_company_bs(
     ticker: str,
-    from_year: Optional[str] = Query(None, description="Start year in YYYY-MM or YYYY format"),
-    to_year: Optional[str] = Query(None, description="End year in YYYY-MM or YYYY format"),
+    from_year: Optional[str] = Query(
+        None, description="Start year in YYYY-MM or YYYY format"
+    ),
+    to_year: Optional[str] = Query(
+        None, description="End year in YYYY-MM or YYYY format"
+    ),
 ) -> Dict[str, Any]:
     """Return historical Balance Sheet data for the given company."""
     db_path = get_db_path()
@@ -321,11 +361,16 @@ async def get_company_bs(
 # 5. GET /api/v1/companies/{ticker}/cashflow
 # ===========================================================================
 
+
 @router.get("/{ticker}/cashflow", summary="Get Cash Flow History")
 async def get_company_cashflow(
     ticker: str,
-    from_year: Optional[str] = Query(None, description="Start year in YYYY-MM or YYYY format"),
-    to_year: Optional[str] = Query(None, description="End year in YYYY-MM or YYYY format"),
+    from_year: Optional[str] = Query(
+        None, description="Start year in YYYY-MM or YYYY format"
+    ),
+    to_year: Optional[str] = Query(
+        None, description="End year in YYYY-MM or YYYY format"
+    ),
 ) -> Dict[str, Any]:
     """Return historical Cash Flow statement data for the given company."""
     db_path = get_db_path()
@@ -365,10 +410,15 @@ async def get_company_cashflow(
 # 6. GET /api/v1/companies/{ticker}/ratios
 # ===========================================================================
 
-@router.get("/{ticker}/ratios", summary="Get Computed KPIs and Financial Ratios History")
+
+@router.get(
+    "/{ticker}/ratios", summary="Get Computed KPIs and Financial Ratios History"
+)
 async def get_company_ratios(
     ticker: str,
-    year: Optional[str] = Query(None, description="Filter for a specific year (e.g. 2024-03)"),
+    year: Optional[str] = Query(
+        None, description="Filter for a specific year (e.g. 2024-03)"
+    ),
 ) -> Dict[str, Any]:
     """Return computed KPI ratios across all years (or single year if specified)."""
     db_path = get_db_path()
@@ -404,6 +454,7 @@ async def get_company_ratios(
 # ===========================================================================
 # 7. GET /api/v1/companies/{ticker}/tearsheet
 # ===========================================================================
+
 
 @router.get("/{ticker}/tearsheet", summary="Download Company Tearsheet PDF")
 async def get_company_tearsheet(ticker: str) -> FileResponse:
@@ -447,10 +498,14 @@ async def get_company_tearsheet(ticker: str) -> FileResponse:
 # 8. GET /api/v1/companies/{ticker}/peers/compare
 # ===========================================================================
 
-@router.get("/{ticker}/peers/compare", summary="Get Company 8-Axis Radar Peer Comparison")
+
+@router.get(
+    "/{ticker}/peers/compare", summary="Get Company 8-Axis Radar Peer Comparison"
+)
 async def get_company_peer_comparison(ticker: str) -> Dict[str, Any]:
     """Return 8-axis radar comparison data: company percentiles + peer group avg + benchmark leader."""
     from src.api.routers.peers import get_peer_comparison
+
     return await get_peer_comparison(ticker)
 
 
@@ -458,7 +513,10 @@ async def get_company_peer_comparison(ticker: str) -> Dict[str, Any]:
 # 9. GET /api/v1/companies/{ticker}/documents
 # ===========================================================================
 
-@router.get("/{ticker}/documents", summary="Get Annual Report Links with Validation Flags")
+
+@router.get(
+    "/{ticker}/documents", summary="Get Annual Report Links with Validation Flags"
+)
 async def get_company_documents(ticker: str) -> Dict[str, Any]:
     """Return annual report links with is_url_valid boolean flag for each document."""
     db_path = get_db_path()
@@ -478,7 +536,11 @@ async def get_company_documents(ticker: str) -> Dict[str, Any]:
             (cid,),
         ).fetchall()
 
-        available_years = [r["year"] for r in years_rows] if years_rows else ["2024-03", "2023-03", "2022-03", "2021-03", "2020-03"]
+        available_years = (
+            [r["year"] for r in years_rows]
+            if years_rows
+            else ["2024-03", "2023-03", "2022-03", "2021-03", "2020-03"]
+        )
 
         documents = []
         for yr in available_years:
@@ -488,14 +550,16 @@ async def get_company_documents(ticker: str) -> Dict[str, Any]:
             # Validate URL format and non-empty structure
             is_valid = bool(doc_url.startswith("https://") and len(cid) >= 2)
 
-            documents.append({
-                "company_id": cid,
-                "financial_year": yr,
-                "title": f"{cname} Annual Report {yr_short}",
-                "document_type": "Annual Report",
-                "url": doc_url,
-                "is_url_valid": is_valid,
-            })
+            documents.append(
+                {
+                    "company_id": cid,
+                    "financial_year": yr,
+                    "title": f"{cname} Annual Report {yr_short}",
+                    "document_type": "Annual Report",
+                    "url": doc_url,
+                    "is_url_valid": is_valid,
+                }
+            )
 
         return {
             "company_id": cid,

@@ -15,9 +15,7 @@ Usage:
 from __future__ import annotations
 
 import concurrent.futures
-import json
 import logging
-import sqlite3
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -27,15 +25,15 @@ import pandas as pd
 
 from src.api.main import app
 from src.dashboard.utils.db import (
-    get_all_ratios,
     get_bs,
     get_cf,
-    get_companies,
     get_pl,
     get_ratios,
 )
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -80,12 +78,14 @@ def run_concurrent_screener_load_test(
         "concurrency": max_workers,
         "total_wall_time_s": round(total_wall_time_s, 4),
         "target_max_wall_time_s": 10.0,
-        "passed": bool(total_wall_time_s < 10.0 and all(sc == 200 for sc in status_codes)),
+        "passed": bool(
+            total_wall_time_s < 10.0 and all(sc == 200 for sc in status_codes)
+        ),
         "avg_latency_ms": round(avg_latency_ms, 2),
         "min_latency_ms": round(min_latency_ms, 2),
         "max_latency_ms": round(max_latency_ms, 2),
         "p95_latency_ms": round(p95_latency_ms, 2),
-        "individual_latencies_ms": [round(l, 2) for l in latencies],
+        "individual_latencies_ms": [round(lat, 2) for lat in latencies],
     }
 
 
@@ -105,24 +105,26 @@ def run_dashboard_profile_benchmark(
 
         # Measure direct DB load time across all statements (Ratios + PL + BS + Cashflow)
         t2 = time.perf_counter()
-        r_df = get_ratios(ticker)
-        pl_df = get_pl(ticker)
-        bs_df = get_bs(ticker)
-        cf_df = get_cf(ticker)
+        get_ratios(ticker)
+        get_pl(ticker)
+        get_bs(ticker)
+        get_cf(ticker)
         t3 = time.perf_counter()
         db_elapsed_ms = (t3 - t2) * 1000.0
 
         total_load_ms = api_elapsed_ms + db_elapsed_ms
         passed = (total_load_ms / 1000.0) < 3.0
 
-        results.append({
-            "ticker": ticker,
-            "api_status": resp.status_code,
-            "api_latency_ms": round(api_elapsed_ms, 2),
-            "db_latency_ms": round(db_elapsed_ms, 2),
-            "total_load_time_s": round(total_load_ms / 1000.0, 4),
-            "passed": passed,
-        })
+        results.append(
+            {
+                "ticker": ticker,
+                "api_status": resp.status_code,
+                "api_latency_ms": round(api_elapsed_ms, 2),
+                "db_latency_ms": round(db_elapsed_ms, 2),
+                "total_load_time_s": round(total_load_ms / 1000.0, 4),
+                "passed": passed,
+            }
+        )
 
     all_passed = all(r["passed"] for r in results)
     avg_total_s = sum(r["total_load_time_s"] for r in results) / len(results)
@@ -185,7 +187,7 @@ This benchmark evaluates system performance, concurrency under load, query optim
     for idx, lat in enumerate(load_test_results["individual_latencies_ms"], start=1):
         md_content += f"| Req #{idx} | {lat} ms | 200 OK |\n"
 
-    md_content += f"""
+    md_content += """
 ---
 
 ## 3. Dashboard Profile Screen Load Time Benchmark
@@ -201,7 +203,7 @@ Tested across 5 companies representing diverse sectors (IT, Energy, Financials, 
             f"{r['db_latency_ms']} ms | **{r['total_load_time_s']}s** | < 3.0s | **PASSED** |\n"
         )
 
-    md_content += f"""
+    md_content += """
 ---
 
 ## 4. SQLite Query Optimisation & Indexing
@@ -251,20 +253,30 @@ def main():
     print("=" * 65)
 
     # 1. Ensure indexes applied
-    from src.analytics.optimize_db import apply_database_indexes, verify_database_indexes
+    from src.analytics.optimize_db import (
+        apply_database_indexes,
+        verify_database_indexes,
+    )
+
     apply_database_indexes()
     indexes = verify_database_indexes()
 
     # 2. Run concurrent screener load test
     logger.info("Executing 10 concurrent screener load tests...")
     load_results = run_concurrent_screener_load_test(num_requests=10, max_workers=10)
-    print(f"  • Load Test Wall Time: {load_results['total_wall_time_s']}s (Target: < 10s) -> PASSED: {load_results['passed']}")
-    print(f"  • Screener Latency: Avg={load_results['avg_latency_ms']}ms, P95={load_results['p95_latency_ms']}ms")
+    print(
+        f"  • Load Test Wall Time: {load_results['total_wall_time_s']}s (Target: < 10s) -> PASSED: {load_results['passed']}"
+    )
+    print(
+        f"  • Screener Latency: Avg={load_results['avg_latency_ms']}ms, P95={load_results['p95_latency_ms']}ms"
+    )
 
     # 3. Run dashboard company profile load benchmark
     logger.info("Executing 5-ticker company profile load benchmark...")
     profile_results = run_dashboard_profile_benchmark()
-    print(f"  • Profile Benchmark: Avg={profile_results['avg_load_time_s']}s (Target: < 3s) -> ALL PASSED: {profile_results['all_passed']}")
+    print(
+        f"  • Profile Benchmark: Avg={profile_results['avg_load_time_s']}s (Target: < 3s) -> ALL PASSED: {profile_results['all_passed']}"
+    )
 
     # 4. Generate perf_notes.md
     report_file = generate_perf_notes_md(load_results, profile_results, indexes)

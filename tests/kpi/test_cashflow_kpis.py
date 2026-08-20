@@ -14,7 +14,6 @@ Sprint 2, Day 11 — 10 tests covering:
 """
 
 import pandas as pd
-import pytest
 
 from src.analytics.cashflow_kpis import (
     capex_intensity,
@@ -27,8 +26,8 @@ from src.analytics.cashflow_kpis import (
     get_pattern_distribution,
 )
 
-
 # ── Free Cash Flow ─────────────────────────────────────────────────────
+
 
 class TestFreeCashFlow:
 
@@ -42,6 +41,7 @@ class TestFreeCashFlow:
 
 
 # ── CFO Quality Score ──────────────────────────────────────────────────
+
 
 class TestCfoQualityScore:
 
@@ -64,6 +64,7 @@ class TestCfoQualityScore:
 
 # ── CapEx Intensity ────────────────────────────────────────────────────
 
+
 class TestCapExIntensity:
 
     def test_asset_light(self):
@@ -81,6 +82,7 @@ class TestCapExIntensity:
 
 # ── FCF Conversion Rate ───────────────────────────────────────────────
 
+
 class TestFcfConversionRate:
 
     def test_normal(self):
@@ -93,6 +95,7 @@ class TestFcfConversionRate:
 
 # ── Capital Allocation Pattern ─────────────────────────────────────────
 
+
 class TestCapitalAllocationPattern:
 
     def test_reinvestor(self):
@@ -102,9 +105,7 @@ class TestCapitalAllocationPattern:
 
     def test_shareholder_returns(self):
         """(+,-,-) with CFO/PAT=2.0 > 1.5 → Shareholder Returns."""
-        result = classify_capital_allocation(
-            500.0, -200.0, -100.0, cfo_pat_ratio=2.0
-        )
+        result = classify_capital_allocation(500.0, -200.0, -100.0, cfo_pat_ratio=2.0)
         assert result["pattern_label"] == "Shareholder Returns"
 
     def test_distress_signal(self):
@@ -120,6 +121,7 @@ class TestCapitalAllocationPattern:
 
 # ── CSV generation ─────────────────────────────────────────────────────
 
+
 class TestGenerateCsv:
 
     def test_writes_csv(self, tmp_path):
@@ -128,8 +130,11 @@ class TestGenerateCsv:
         csv_path = str(tmp_path / "allocation.csv")
         rows = [
             dict(
-                company_id="TCS", year="2023-03",
-                cfo_sign=1, cfi_sign=-1, cff_sign=-1,
+                company_id="TCS",
+                year="2023-03",
+                cfo_sign=1,
+                cfi_sign=-1,
+                cff_sign=-1,
                 pattern_label="Shareholder Returns",
             ),
         ]
@@ -148,19 +153,26 @@ class TestGenerateCsv:
 
 # ── Pattern Distribution ───────────────────────────────────────────────
 
+
 class TestPatternDistribution:
 
     def test_distribution_calculation(self):
-        df = pd.DataFrame([
-            {"company_id": "A", "year": "2023-03", "pattern_label": "Reinvestor"},
-            {"company_id": "A", "year": "2024-03", "pattern_label": "Shareholder Returns"},
-            {"company_id": "B", "year": "2024-03", "pattern_label": "Reinvestor"},
-        ])
+        df = pd.DataFrame(
+            [
+                {"company_id": "A", "year": "2023-03", "pattern_label": "Reinvestor"},
+                {
+                    "company_id": "A",
+                    "year": "2024-03",
+                    "pattern_label": "Shareholder Returns",
+                },
+                {"company_id": "B", "year": "2024-03", "pattern_label": "Reinvestor"},
+            ]
+        )
         dist = get_pattern_distribution(df, latest_only=True)
         assert "pattern_label" in dist.columns
         assert "count" in dist.columns
         assert "percentage" in dist.columns
-        
+
         counts = dict(zip(dist["pattern_label"], dist["count"]))
         assert counts["Shareholder Returns"] == 1
         assert counts["Reinvestor"] == 1
@@ -168,19 +180,34 @@ class TestPatternDistribution:
 
 # ── Pattern Changes YoY ────────────────────────────────────────────────
 
+
 class TestPatternChanges:
 
     def test_detects_yoy_changes(self, tmp_path):
         csv_path = tmp_path / "pattern_changes.csv"
-        df = pd.DataFrame([
-            {"company_id": "TCS", "year": "2022-03", "pattern_label": "Reinvestor"},
-            {"company_id": "TCS", "year": "2023-03", "pattern_label": "Distress Signal"},
-            {"company_id": "INFY", "year": "2022-03", "pattern_label": "Reinvestor"},
-            {"company_id": "INFY", "year": "2023-03", "pattern_label": "Reinvestor"},
-        ])
+        df = pd.DataFrame(
+            [
+                {"company_id": "TCS", "year": "2022-03", "pattern_label": "Reinvestor"},
+                {
+                    "company_id": "TCS",
+                    "year": "2023-03",
+                    "pattern_label": "Distress Signal",
+                },
+                {
+                    "company_id": "INFY",
+                    "year": "2022-03",
+                    "pattern_label": "Reinvestor",
+                },
+                {
+                    "company_id": "INFY",
+                    "year": "2023-03",
+                    "pattern_label": "Reinvestor",
+                },
+            ]
+        )
         res = generate_pattern_changes(df, output_path=csv_path)
         assert len(res) == 1
         assert res.iloc[0]["company_id"] == "TCS"
         assert res.iloc[0]["from_pattern"] == "Reinvestor"
         assert res.iloc[0]["to_pattern"] == "Distress Signal"
-        assert csv_path.exists()
+        assert csv_path.exists()

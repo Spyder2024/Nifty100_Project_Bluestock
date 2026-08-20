@@ -1,14 +1,12 @@
 """Tests for radar chart generation (Day 19)."""
 
 import sqlite3
-from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import pytest
 
 from src.analytics.radar import (
@@ -21,8 +19,8 @@ from src.analytics.radar import (
 )
 from src.analytics.peer import create_peer_table
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def company_pctls():
@@ -55,16 +53,25 @@ def db_conn():
 
     rows = []
     tcs_pctls = {
-        "return_on_equity": 83.33, "return_on_capital_employed": 83.33,
-        "net_profit_margin": 83.33, "operating_profit_margin": 83.33,
-        "cfo_quality_score": 83.33, "operating_cash_flow_ratio": 83.33,
-        "debt_to_equity": 83.33, "interest_coverage_ratio": 83.33,
-        "revenue_cagr_5yr": 83.33, "net_profit_cagr_5yr": 83.33,
+        "return_on_equity": 83.33,
+        "return_on_capital_employed": 83.33,
+        "net_profit_margin": 83.33,
+        "operating_profit_margin": 83.33,
+        "cfo_quality_score": 83.33,
+        "operating_cash_flow_ratio": 83.33,
+        "debt_to_equity": 83.33,
+        "interest_coverage_ratio": 83.33,
+        "revenue_cagr_5yr": 83.33,
+        "net_profit_cagr_5yr": 83.33,
     }
     infy_pctls = {m: 50.0 for m in RADAR_METRICS}
     wipro_pctls = {m: 16.67 for m in RADAR_METRICS}
 
-    for name, pctls in [("TCS", tcs_pctls), ("INFY", infy_pctls), ("WIPRO", wipro_pctls)]:
+    for name, pctls in [
+        ("TCS", tcs_pctls),
+        ("INFY", infy_pctls),
+        ("WIPRO", wipro_pctls),
+    ]:
         for metric, pr in pctls.items():
             rows.append((name, 2024, "IT", metric, pr, 3))
 
@@ -81,6 +88,7 @@ def db_conn():
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
+
 class TestConstants:
     def test_ten_radar_metrics(self):
         assert len(RADAR_METRICS) == 10
@@ -90,31 +98,27 @@ class TestConstants:
 
     def test_metrics_match_peer_metrics(self):
         from src.analytics.peer import PEER_METRICS
+
         assert RADAR_METRICS == PEER_METRICS
 
 
 # ── create_radar_chart ───────────────────────────────────────────────────────
 
+
 class TestCreateRadarChart:
     def test_returns_figure(self, company_pctls, peer_avg_pctls):
-        fig = create_radar_chart(
-            "TCS", "IT", 2024, company_pctls, peer_avg_pctls
-        )
+        fig = create_radar_chart("TCS", "IT", 2024, company_pctls, peer_avg_pctls)
         assert isinstance(fig, plt.Figure)
         plt.close(fig)
 
     def test_figure_has_polar_axes(self, company_pctls, peer_avg_pctls):
-        fig = create_radar_chart(
-            "TCS", "IT", 2024, company_pctls, peer_avg_pctls
-        )
+        fig = create_radar_chart("TCS", "IT", 2024, company_pctls, peer_avg_pctls)
         ax = fig.axes[0]
         assert type(ax).__name__ == "PolarAxes"
         plt.close(fig)
 
     def test_two_lines_when_peer_overlay(self, company_pctls, peer_avg_pctls):
-        fig = create_radar_chart(
-            "TCS", "IT", 2024, company_pctls, peer_avg_pctls
-        )
+        fig = create_radar_chart("TCS", "IT", 2024, company_pctls, peer_avg_pctls)
         ax = fig.axes[0]
         assert len(ax.lines) == 2  # company + peer avg
         plt.close(fig)
@@ -126,9 +130,7 @@ class TestCreateRadarChart:
         plt.close(fig)
 
     def test_custom_title(self, company_pctls):
-        fig = create_radar_chart(
-            "TCS", "IT", 2024, company_pctls, title="Custom Title"
-        )
+        fig = create_radar_chart("TCS", "IT", 2024, company_pctls, title="Custom Title")
         ax = fig.axes[0]
         assert ax.get_title() == "Custom Title"
         plt.close(fig)
@@ -143,7 +145,11 @@ class TestCreateRadarChart:
     def test_custom_metrics_subset(self, company_pctls, peer_avg_pctls):
         subset = ["return_on_equity", "net_profit_margin", "debt_to_equity"]
         fig = create_radar_chart(
-            "TCS", "IT", 2024, company_pctls, peer_avg_pctls,
+            "TCS",
+            "IT",
+            2024,
+            company_pctls,
+            peer_avg_pctls,
             metrics=subset,
         )
         ax = fig.axes[0]
@@ -168,11 +174,10 @@ class TestCreateRadarChart:
 
 # ── export_radar_png ─────────────────────────────────────────────────────────
 
+
 class TestExportRadarPng:
     def test_creates_file(self, company_pctls, peer_avg_pctls, tmp_path):
-        fig = create_radar_chart(
-            "TCS", "IT", 2024, company_pctls, peer_avg_pctls
-        )
+        fig = create_radar_chart("TCS", "IT", 2024, company_pctls, peer_avg_pctls)
         out = tmp_path / "radar.png"
         result = export_radar_png(fig, str(out))
         assert result.exists()
@@ -198,6 +203,7 @@ class TestExportRadarPng:
 
 # ── DB-backed radar ──────────────────────────────────────────────────────────
 
+
 class TestPeerRadarFromDb:
     def test_basic_db_radar(self, db_conn):
         fig = create_peer_radar_from_db(db_conn, "TCS", 2024)
@@ -220,6 +226,7 @@ class TestPeerRadarFromDb:
 
 
 # ── Batch export ──────────────────────────────────────────────────────────────
+
 
 class TestExportPeerGroupRadars:
     def test_exports_all_members(self, db_conn, tmp_path):
@@ -247,14 +254,11 @@ class TestExportPeerGroupRadars:
 
 # ── Visual integrity ─────────────────────────────────────────────────────────
 
+
 class TestVisualIntegrity:
-    def test_strong_company_polygon_is_above_peer(
-        self, company_pctls, peer_avg_pctls
-    ):
+    def test_strong_company_polygon_is_above_peer(self, company_pctls, peer_avg_pctls):
         """When company percentiles > peer avg, the polygon should be larger."""
-        fig = create_radar_chart(
-            "StrongCo", "IT", 2024, company_pctls, peer_avg_pctls
-        )
+        fig = create_radar_chart("StrongCo", "IT", 2024, company_pctls, peer_avg_pctls)
         ax = fig.axes[0]
         # Company line is the first (blue), peer avg is second (red)
         company_line = ax.lines[0]

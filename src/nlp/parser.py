@@ -43,7 +43,7 @@ def _find_analysis_file() -> Path:
         if p.exists():
             return p
     raise FileNotFoundError(
-        f"analysis.xlsx not found in any of:\n"
+        "analysis.xlsx not found in any of:\n"
         + "\n".join(f"  - {p}" for p in _CANDIDATE_PATHS)
     )
 
@@ -68,9 +68,7 @@ DB_PATH: Path = _find_db()
 RE_YEARS = re.compile(r"(\d+)\s*Years?:?\s*(-?[\d.]+)%", re.IGNORECASE)
 
 # Extended: matches "TTM: 43%", "1 Year: -2%", "Last Year: 12%"
-RE_EXTENDED = re.compile(
-    r"(TTM|1\s*Year|Last\s*Year):?\s*(-?[\d.]+)%", re.IGNORECASE
-)
+RE_EXTENDED = re.compile(r"(TTM|1\s*Year|Last\s*Year):?\s*(-?[\d.]+)%", re.IGNORECASE)
 
 # Map extended period labels to canonical string
 _EXTENDED_PERIOD_MAP = {
@@ -98,6 +96,7 @@ TARGET_FIELDS = [
 
 
 # ── Parsing logic ───────────────────────────────────────────────────────────
+
 
 def parse_single_cell(text: str) -> tuple[Optional[str], Optional[float]] | None:
     """Extract (period, value) from a single text cell.
@@ -165,30 +164,36 @@ def parse_all(df: pd.DataFrame) -> tuple[list[dict], list[dict]]:
             result = parse_single_cell(raw_text)
             if result is not None:
                 period_str, value = result
-                parsed.append({
-                    "row_id": row_id,
-                    "company_id": company_id,
-                    "metric_type": metric,
-                    "raw_text": raw_text,
-                    "period_label": period_str,
-                    "value_pct": value,
-                })
+                parsed.append(
+                    {
+                        "row_id": row_id,
+                        "company_id": company_id,
+                        "metric_type": metric,
+                        "raw_text": raw_text,
+                        "period_label": period_str,
+                        "value_pct": value,
+                    }
+                )
             elif raw_text and raw_text.lower() not in ("nan", "none", ""):
-                failures.append({
-                    "row_id": row_id,
-                    "company_id": company_id,
-                    "metric_type": metric,
-                    "raw_text": raw_text,
-                    "reason": "No regex match",
-                })
+                failures.append(
+                    {
+                        "row_id": row_id,
+                        "company_id": company_id,
+                        "metric_type": metric,
+                        "raw_text": raw_text,
+                        "reason": "No regex match",
+                    }
+                )
 
     return parsed, failures
 
 
 # ── Cross-validation against DB ────────────────────────────────────────────
 
+
 def cross_validate(
-    parsed: list[dict], divergence_pct: float = 5.0,
+    parsed: list[dict],
+    divergence_pct: float = 5.0,
 ) -> list[dict]:
     """Compare parsed CAGR values against financial_ratios in the DB."""
     if not DB_PATH.exists():
@@ -202,9 +207,7 @@ def cross_validate(
         return []
 
     try:
-        fr_df = pd.read_sql(
-            "SELECT * FROM financial_ratios", conn
-        )
+        fr_df = pd.read_sql("SELECT * FROM financial_ratios", conn)
     except Exception:
         # Table may be named 'ratios' instead of 'financial_ratios'
         try:
@@ -244,30 +247,31 @@ def cross_validate(
         if valid.empty:
             continue
 
-        latest = valid.sort_values(
-            "year", ascending=False, na_position="last"
-        ).iloc[0]
+        latest = valid.sort_values("year", ascending=False, na_position="last").iloc[0]
         db_val = float(latest[db_col])
         latest_year = latest["year"]
 
         diff = abs(parsed_val - db_val)
         if diff > divergence_pct:
-            divergences.append({
-                "company_id": company,
-                "metric_type": metric,
-                "period_years": period,
-                "parsed_value": parsed_val,
-                "db_column": db_col,
-                "db_value": db_val,
-                "db_year": latest_year,
-                "divergence_pct": round(diff, 2),
-                "flag": "REVIEW",
-            })
+            divergences.append(
+                {
+                    "company_id": company,
+                    "metric_type": metric,
+                    "period_years": period,
+                    "parsed_value": parsed_val,
+                    "db_column": db_col,
+                    "db_value": db_val,
+                    "db_year": latest_year,
+                    "divergence_pct": round(diff, 2),
+                    "flag": "REVIEW",
+                }
+            )
 
     return divergences
 
 
 # ── Output writers ──────────────────────────────────────────────────────────
+
 
 def write_parsed(records: list[dict], path: Path) -> None:
     """Write parsed results to CSV."""
@@ -275,8 +279,12 @@ def write_parsed(records: list[dict], path: Path) -> None:
         print(f"  [WARN] No parsed records to write — {path.name} not created.")
         return
     columns = [
-        "row_id", "company_id", "metric_type",
-        "raw_text", "period_label", "value_pct",
+        "row_id",
+        "company_id",
+        "metric_type",
+        "raw_text",
+        "period_label",
+        "value_pct",
     ]
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=columns, extrasaction="ignore")
@@ -304,9 +312,15 @@ def write_cross_validation(records: list[dict], path: Path) -> None:
         print(f"  [OK] No divergences (or DB empty) — {path.name} not created.")
         return
     columns = [
-        "company_id", "metric_type", "period_years",
-        "parsed_value", "db_column", "db_value", "db_year",
-        "divergence_pct", "flag",
+        "company_id",
+        "metric_type",
+        "period_years",
+        "parsed_value",
+        "db_column",
+        "db_value",
+        "db_year",
+        "divergence_pct",
+        "flag",
     ]
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=columns, extrasaction="ignore")
@@ -317,13 +331,14 @@ def write_cross_validation(records: list[dict], path: Path) -> None:
 
 # ── Main ────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     print("=" * 60)
     print("  NLP Analysis Text Parser — Day 29")
     print("=" * 60)
 
     # 1. Load
-    print(f"\n[1/4] Loading analysis.xlsx ...")
+    print("\n[1/4] Loading analysis.xlsx ...")
     print(f"       Path: {ANALYSIS_XLSX}")
     try:
         df = load_analysis()
@@ -340,7 +355,7 @@ def main() -> None:
     print(f"       Matched: {len(parsed)}  |  Failed: {len(failures)}")
 
     # 3. Cross-validate
-    print(f"\n[3/4] Cross-validating against DB ...")
+    print("\n[3/4] Cross-validating against DB ...")
     print(f"       DB path: {DB_PATH}")
     divergences = cross_validate(parsed)
 
@@ -352,7 +367,9 @@ def main() -> None:
 
     # Summary
     print(f"\n{'=' * 60}")
-    print(f"  Parsed: {len(parsed)} | Failures: {len(failures)} | Divergences: {len(divergences)}")
+    print(
+        f"  Parsed: {len(parsed)} | Failures: {len(failures)} | Divergences: {len(divergences)}"
+    )
     print(f"{'=' * 60}")
 
 

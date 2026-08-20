@@ -7,7 +7,6 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-import pandas as pd
 import streamlit as st
 import plotly.express as px
 
@@ -35,12 +34,12 @@ all_ratios = all_ratios[all_ratios["broad_sector"].notna()].copy()
 
 # ── Define KPIs to analyse ────────────────────────────────────────────
 KPI_DEFS: list[tuple[str, str]] = [
-    ("roe",               "ROE"),
-    ("roce",              "ROCE"),
+    ("roe", "ROE"),
+    ("roce", "ROCE"),
     ("net_profit_margin", "NPM"),
-    ("debt_to_equity",    "D/E"),
-    ("pe_ratio",          "P/E"),
-    ("current_ratio",     "Curr. Ratio"),
+    ("debt_to_equity", "D/E"),
+    ("pe_ratio", "P/E"),
+    ("current_ratio", "Curr. Ratio"),
 ]
 
 available_kpis = [(col, label) for col, label in KPI_DEFS if col in all_ratios.columns]
@@ -53,10 +52,7 @@ if not available_kpis:
 kpi_cols = [col for col, _ in available_kpis]
 
 sector_medians = (
-    all_ratios.groupby("broad_sector")[kpi_cols]
-    .median()
-    .round(2)
-    .reset_index()
+    all_ratios.groupby("broad_sector")[kpi_cols].median().round(2).reset_index()
 )
 
 sector_counts = (

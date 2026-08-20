@@ -13,7 +13,6 @@ Sprint 2, Day 08 — 8 tests covering:
 
 import logging
 
-import pytest
 
 from src.analytics.ratios import (
     net_profit_margin,
@@ -23,8 +22,8 @@ from src.analytics.ratios import (
     return_on_equity,
 )
 
-
 # ── Net Profit Margin ────────────────────────────────────────────────
+
 
 class TestNetProfitMargin:
 
@@ -41,6 +40,7 @@ class TestNetProfitMargin:
 
 # ── Operating Profit Margin ──────────────────────────────────────────
 
+
 class TestOperatingProfitMargin:
 
     def test_normal_computation(self):
@@ -50,14 +50,13 @@ class TestOperatingProfitMargin:
     def test_cross_check_mismatch_logs_warning(self, caplog):
         """Computed 20% vs source 25% (diff=5pp > 1%) → WARNING logged."""
         with caplog.at_level(logging.WARNING, logger="src.analytics.ratios"):
-            result = operating_profit_margin(
-                200.0, 1000.0, source_opm=25.0
-            )
+            result = operating_profit_margin(200.0, 1000.0, source_opm=25.0)
         assert result == 20.0
         assert "OPM cross-check mismatch" in caplog.text
 
 
 # ── Return on Equity ─────────────────────────────────────────────────
+
 
 class TestReturnOnEquity:
 
@@ -72,6 +71,7 @@ class TestReturnOnEquity:
 
 
 # ── Return on Capital Employed ───────────────────────────────────────
+
 
 class TestReturnOnCapitalEmployed:
 
@@ -91,6 +91,7 @@ class TestReturnOnCapitalEmployed:
 
 
 # ── Return on Assets ─────────────────────────────────────────────────
+
 
 class TestReturnOnAssets:
 

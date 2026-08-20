@@ -17,6 +17,7 @@ from typing import Optional
 
 class EdgeCaseType(Enum):
     """Enumeration of all edge case categories."""
+
     CAGR_TURNAROUND = "CAGR_TURNAROUND"
     CAGR_ZERO_BASE = "CAGR_ZERO_BASE"
     CAGR_DECLINE_TO_LOSS = "CAGR_DECLINE_TO_LOSS"
@@ -33,6 +34,7 @@ class EdgeCaseType(Enum):
 @dataclass
 class EdgeCaseRecord:
     """Single edge case event."""
+
     timestamp: str
     company_id: str
     year: str
@@ -51,9 +53,7 @@ class EdgeCaseLogger:
 
     def __init__(self, log_dir: Optional[str] = None) -> None:
         if log_dir is None:
-            log_dir = str(
-                Path(__file__).resolve().parent.parent.parent / "logs"
-            )
+            log_dir = str(Path(__file__).resolve().parent.parent.parent / "logs")
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = self.log_dir / "ratio_edge_cases.log"
@@ -70,9 +70,7 @@ class EdgeCaseLogger:
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         ch.setLevel(logging.WARNING)
-        fmt = logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(message)s"
-        )
+        fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
         fh.setFormatter(fmt)
         ch.setFormatter(fmt)
         self._logger.addHandler(fh)
@@ -157,9 +155,7 @@ class EdgeCaseLogger:
             raw_value=f"num={numerator},den={denominator}",
         )
 
-    def log_debt_free(
-        self, company_id: str, year: str, kpi: str
-    ) -> None:
+    def log_debt_free(self, company_id: str, year: str, kpi: str) -> None:
         """Log a debt-free substitution."""
         self.log(
             company_id=company_id,

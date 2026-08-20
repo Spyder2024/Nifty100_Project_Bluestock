@@ -12,7 +12,6 @@ Weights:
 import numpy as np
 import pandas as pd
 
-
 # ── Metric Definitions ────────────────────────────────────────────────────────
 
 PROFITABILITY_METRICS = [
@@ -34,7 +33,7 @@ GROWTH_METRICS = [
 ]
 
 LEVERAGE_METRICS = [
-    "debt_to_equity",           # lower is better → inverted
+    "debt_to_equity",  # lower is better → inverted
     "interest_coverage_ratio",  # higher is better
 ]
 
@@ -48,10 +47,7 @@ CATEGORY_WEIGHTS = {
 LOWER_IS_BETTER = {"debt_to_equity"}
 
 ALL_SCORING_METRICS = (
-    PROFITABILITY_METRICS
-    + CASH_QUALITY_METRICS
-    + GROWTH_METRICS
-    + LEVERAGE_METRICS
+    PROFITABILITY_METRICS + CASH_QUALITY_METRICS + GROWTH_METRICS + LEVERAGE_METRICS
 )
 
 CATEGORY_MAP: dict[str, str] = {}
@@ -66,6 +62,7 @@ for _m in LEVERAGE_METRICS:
 
 
 # ── Core Functions ────────────────────────────────────────────────────────────
+
 
 def winsorise_series(
     series: pd.Series,
@@ -149,10 +146,8 @@ def compute_all_scores(
         DataFrame with score columns + composite_score.
     """
     # Determine the actual sector column to use
-    actual_sector_col = None
     for sc in [sector_col, "broad_sector", "sector", "sector_id"]:
         if sc in df.columns and df[sc].notna().any():
-            actual_sector_col = sc
             break
 
     # ... rest of function uses actual_sector_col everywhere
@@ -178,8 +173,7 @@ def compute_all_scores(
     category_scores: dict[str, pd.Series] = {}
     for category in CATEGORY_WEIGHTS:
         cat_metrics = [
-            m for m, c in CATEGORY_MAP.items()
-            if c == category and m in metric_scores
+            m for m, c in CATEGORY_MAP.items() if c == category and m in metric_scores
         ]
         if cat_metrics:
             temp = pd.DataFrame({m: metric_scores[m] for m in cat_metrics})

@@ -23,9 +23,9 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -33,12 +33,13 @@ from src.analytics.clustering import (
     DEFAULT_DB_PATH,
     FEATURE_COLUMNS,
     impute_features,
-    load_clustering_features,
     run_clustering,
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 # ── Paths ──────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -90,6 +91,7 @@ CLUSTER_DESCRIPTIVE_NAMES = {
 # 1. 10-KPI Extraction
 # ===========================================================================
 
+
 def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
     """Extract 10 core financial KPIs across all 92 companies for the latest year."""
     if not db_path.exists():
@@ -112,8 +114,12 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
     )
 
     df_r = pd.read_sql("SELECT * FROM ratios ORDER BY company_id, year DESC", conn)
-    df_is = pd.read_sql("SELECT * FROM income_statement ORDER BY company_id, year ASC", conn)
-    df_bs = pd.read_sql("SELECT * FROM balance_sheet ORDER BY company_id, year DESC", conn)
+    df_is = pd.read_sql(
+        "SELECT * FROM income_statement ORDER BY company_id, year ASC", conn
+    )
+    df_bs = pd.read_sql(
+        "SELECT * FROM balance_sheet ORDER BY company_id, year DESC", conn
+    )
     df_cf = pd.read_sql("SELECT * FROM cash_flow ORDER BY company_id, year ASC", conn)
     conn.close()
 
@@ -121,7 +127,9 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
     for _, crow in df_comps.iterrows():
         cid = str(crow["company_id"]).strip()
         cname = str(crow["company_name"]).strip()
-        sec = str(crow["sector_name"] if pd.notna(crow["sector_name"]) else "Unclassified").strip()
+        sec = str(
+            crow["sector_name"] if pd.notna(crow["sector_name"]) else "Unclassified"
+        ).strip()
 
         sub_r = df_r[df_r["company_id"] == cid]
         sub_is = df_is[df_is["company_id"] == cid]
@@ -129,7 +137,11 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
         sub_cf = df_cf[df_cf["company_id"] == cid]
 
         # 1. Return on Equity (ROE %)
-        roe = sub_r.iloc[0]["roe"] if not sub_r.empty and pd.notna(sub_r.iloc[0]["roe"]) else None
+        roe = (
+            sub_r.iloc[0]["roe"]
+            if not sub_r.empty and pd.notna(sub_r.iloc[0]["roe"])
+            else None
+        )
         if roe is not None and (roe < -100.0 or roe > 150.0):
             roe = None
         if roe is None and not sub_is.empty and not sub_bs.empty:
@@ -139,12 +151,22 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
                 roe = (float(ni) / float(eq)) * 100.0
 
         # 2. Return on Capital Employed (ROCE %)
-        roce = sub_r.iloc[0]["roce"] if not sub_r.empty and pd.notna(sub_r.iloc[0]["roce"]) else None
+        roce = (
+            sub_r.iloc[0]["roce"]
+            if not sub_r.empty and pd.notna(sub_r.iloc[0]["roce"])
+            else None
+        )
         if roce is not None and (roce < -100.0 or roce > 150.0):
             roce = None
         if roce is None and not sub_is.empty and not sub_bs.empty:
-            ebit = sub_is.iloc[-1]["ebit"] if pd.notna(sub_is.iloc[-1]["ebit"]) else sub_is.iloc[-1]["operating_income"]
-            cap_emp = (sub_bs.iloc[0]["total_equity"] or 0) + (sub_bs.iloc[0]["borrowings"] or 0)
+            ebit = (
+                sub_is.iloc[-1]["ebit"]
+                if pd.notna(sub_is.iloc[-1]["ebit"])
+                else sub_is.iloc[-1]["operating_income"]
+            )
+            cap_emp = (sub_bs.iloc[0]["total_equity"] or 0) + (
+                sub_bs.iloc[0]["borrowings"] or 0
+            )
             if cap_emp and cap_emp > 10.0 and ebit is not None:
                 calc_roce = (float(ebit) / float(cap_emp)) * 100.0
                 if -100.0 <= calc_roce <= 150.0:
@@ -173,7 +195,11 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
                     npm = calc_npm
 
         # 5. Debt to Equity
-        de = sub_r.iloc[0]["debt_to_equity"] if not sub_r.empty and pd.notna(sub_r.iloc[0]["debt_to_equity"]) else None
+        de = (
+            sub_r.iloc[0]["debt_to_equity"]
+            if not sub_r.empty and pd.notna(sub_r.iloc[0]["debt_to_equity"])
+            else None
+        )
         if (de is None or de > 50.0) and not sub_bs.empty:
             eq = sub_bs.iloc[0]["total_equity"]
             borr = sub_bs.iloc[0]["borrowings"]
@@ -181,9 +207,17 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
                 de = float(borr) / float(eq)
 
         # 6. Interest Coverage Ratio
-        icr = sub_r.iloc[0]["interest_coverage"] if not sub_r.empty and pd.notna(sub_r.iloc[0]["interest_coverage"]) else None
+        icr = (
+            sub_r.iloc[0]["interest_coverage"]
+            if not sub_r.empty and pd.notna(sub_r.iloc[0]["interest_coverage"])
+            else None
+        )
         if (icr is None or icr < -100.0 or icr > 150.0) and not sub_is.empty:
-            ebit = sub_is.iloc[-1]["ebit"] if pd.notna(sub_is.iloc[-1]["ebit"]) else sub_is.iloc[-1]["operating_income"]
+            ebit = (
+                sub_is.iloc[-1]["ebit"]
+                if pd.notna(sub_is.iloc[-1]["ebit"])
+                else sub_is.iloc[-1]["operating_income"]
+            )
             ie = sub_is.iloc[-1]["interest_expense"]
             if ie and ie > 0 and ebit is not None:
                 calc_icr = float(ebit) / float(ie)
@@ -195,7 +229,11 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
             icr = 150.0
 
         # 7. Asset Turnover
-        at = sub_r.iloc[0]["asset_turnover"] if not sub_r.empty and pd.notna(sub_r.iloc[0]["asset_turnover"]) else None
+        at = (
+            sub_r.iloc[0]["asset_turnover"]
+            if not sub_r.empty and pd.notna(sub_r.iloc[0]["asset_turnover"])
+            else None
+        )
         if (at is None or at > 10.0) and not sub_is.empty and not sub_bs.empty:
             rev = sub_is.iloc[-1]["revenue"]
             ta = sub_bs.iloc[0]["total_assets"]
@@ -205,7 +243,11 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
                     at = calc_at
 
         # 8. Dividend Payout Ratio (%)
-        div_payout = sub_r.iloc[0]["dividend_payout"] if not sub_r.empty and pd.notna(sub_r.iloc[0]["dividend_payout"]) else None
+        div_payout = (
+            sub_r.iloc[0]["dividend_payout"]
+            if not sub_r.empty and pd.notna(sub_r.iloc[0]["dividend_payout"])
+            else None
+        )
         if div_payout is not None and (div_payout < 0 or div_payout > 200.0):
             div_payout = None
         if div_payout is None and not sub_cf.empty and not sub_is.empty:
@@ -233,38 +275,48 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
         if len(sub_cf) >= 6:
             s_fcf = sub_cf.iloc[-6]["fcf"]
             if pd.isna(s_fcf) or s_fcf is None:
-                s_fcf = (sub_cf.iloc[-6]["operating_cf"] or 0) - (sub_cf.iloc[-6]["capex"] or 0)
+                s_fcf = (sub_cf.iloc[-6]["operating_cf"] or 0) - (
+                    sub_cf.iloc[-6]["capex"] or 0
+                )
             e_fcf = sub_cf.iloc[-1]["fcf"]
             if pd.isna(e_fcf) or e_fcf is None:
-                e_fcf = (sub_cf.iloc[-1]["operating_cf"] or 0) - (sub_cf.iloc[-1]["capex"] or 0)
+                e_fcf = (sub_cf.iloc[-1]["operating_cf"] or 0) - (
+                    sub_cf.iloc[-1]["capex"] or 0
+                )
             if s_fcf and e_fcf and s_fcf > 0 and e_fcf > 0:
                 fcf_cagr = ((float(e_fcf) / float(s_fcf)) ** (1.0 / 5.0) - 1.0) * 100.0
         elif len(sub_cf) >= 2:
             ny = len(sub_cf) - 1
             s_fcf = sub_cf.iloc[0]["fcf"]
             if pd.isna(s_fcf) or s_fcf is None:
-                s_fcf = (sub_cf.iloc[0]["operating_cf"] or 0) - (sub_cf.iloc[0]["capex"] or 0)
+                s_fcf = (sub_cf.iloc[0]["operating_cf"] or 0) - (
+                    sub_cf.iloc[0]["capex"] or 0
+                )
             e_fcf = sub_cf.iloc[-1]["fcf"]
             if pd.isna(e_fcf) or e_fcf is None:
-                e_fcf = (sub_cf.iloc[-1]["operating_cf"] or 0) - (sub_cf.iloc[-1]["capex"] or 0)
+                e_fcf = (sub_cf.iloc[-1]["operating_cf"] or 0) - (
+                    sub_cf.iloc[-1]["capex"] or 0
+                )
             if s_fcf and e_fcf and s_fcf > 0 and e_fcf > 0:
                 fcf_cagr = ((float(e_fcf) / float(s_fcf)) ** (1.0 / ny) - 1.0) * 100.0
 
-        rows.append({
-            "company_id": cid,
-            "company_name": cname,
-            "sector": sec,
-            "return_on_equity_pct": roe,
-            "return_on_capital_employed_pct": roce,
-            "operating_profit_margin_pct": opm,
-            "net_profit_margin_pct": npm,
-            "debt_to_equity": de,
-            "interest_coverage_ratio": icr,
-            "asset_turnover": at,
-            "dividend_payout_pct": div_payout,
-            "revenue_cagr_5yr": rev_cagr,
-            "fcf_cagr_5yr": fcf_cagr,
-        })
+        rows.append(
+            {
+                "company_id": cid,
+                "company_name": cname,
+                "sector": sec,
+                "return_on_equity_pct": roe,
+                "return_on_capital_employed_pct": roce,
+                "operating_profit_margin_pct": opm,
+                "net_profit_margin_pct": npm,
+                "debt_to_equity": de,
+                "interest_coverage_ratio": icr,
+                "asset_turnover": at,
+                "dividend_payout_pct": div_payout,
+                "revenue_cagr_5yr": rev_cagr,
+                "fcf_cagr_5yr": fcf_cagr,
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -272,6 +324,7 @@ def load_10_kpis_data(db_path: Path = DEFAULT_DB_PATH) -> pd.DataFrame:
 # ===========================================================================
 # 2. Cluster Profiling & Detailed Statistics
 # ===========================================================================
+
 
 def profile_clusters(
     df_clustered: pd.DataFrame,
@@ -297,7 +350,9 @@ def profile_clusters(
         for col in feature_cols:
             vals = sub[col].dropna()
             profile[f"{col}_mean"] = round(vals.mean(), 2) if not vals.empty else 0.0
-            profile[f"{col}_median"] = round(vals.median(), 2) if not vals.empty else 0.0
+            profile[f"{col}_median"] = (
+                round(vals.median(), 2) if not vals.empty else 0.0
+            )
 
         profiles.append(profile)
 
@@ -307,6 +362,7 @@ def profile_clusters(
 # ===========================================================================
 # 3. Correlation Matrix Heatmap
 # ===========================================================================
+
 
 def generate_correlation_heatmap(
     df_kpis: pd.DataFrame,
@@ -373,6 +429,7 @@ def generate_correlation_heatmap(
 # 4. Sector-Level Z-Score Outlier Detection
 # ===========================================================================
 
+
 def detect_sector_outliers(
     df_kpis: pd.DataFrame,
     metric_cols: Sequence[str] = KPI_10_COLUMNS,
@@ -402,26 +459,32 @@ def detect_sector_outliers(
 
                 z_score = (val - sec_mean) / sec_std
                 if abs(z_score) > threshold:
-                    outlier_records.append({
-                        "company_id": r["company_id"],
-                        "company_name": r["company_name"],
-                        "sector": sector,
-                        "metric_name": col,
-                        "metric_value": round(float(val), 2),
-                        "sector_mean": round(float(sec_mean), 2),
-                        "sector_std": round(float(sec_std), 2),
-                        "z_score": round(float(z_score), 2),
-                        "outlier_type": "HIGH" if z_score > 0 else "LOW",
-                    })
+                    outlier_records.append(
+                        {
+                            "company_id": r["company_id"],
+                            "company_name": r["company_name"],
+                            "sector": sector,
+                            "metric_name": col,
+                            "metric_value": round(float(val), 2),
+                            "sector_mean": round(float(sec_mean), 2),
+                            "sector_std": round(float(sec_std), 2),
+                            "z_score": round(float(z_score), 2),
+                            "outlier_type": "HIGH" if z_score > 0 else "LOW",
+                        }
+                    )
 
     df_outliers = pd.DataFrame(outlier_records)
     if not df_outliers.empty:
-        df_outliers = df_outliers.sort_values(by=["sector", "metric_name", "z_score"], ascending=[True, True, False])
+        df_outliers = df_outliers.sort_values(
+            by=["sector", "metric_name", "z_score"], ascending=[True, True, False]
+        )
 
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         df_outliers.to_csv(output_path, index=False)
-        logger.info("Saved outlier report to: %s (%d outliers)", output_path, len(df_outliers))
+        logger.info(
+            "Saved outlier report to: %s (%d outliers)", output_path, len(df_outliers)
+        )
 
     return df_outliers
 
@@ -429,6 +492,7 @@ def detect_sector_outliers(
 # ===========================================================================
 # 5. Portfolio Distribution Statistics (P10, P25, P50, P75, P90, Mean, Std)
 # ===========================================================================
+
 
 def compute_portfolio_stats(
     df_kpis: pd.DataFrame,
@@ -444,17 +508,19 @@ def compute_portfolio_stats(
         if series.empty:
             continue
 
-        stats_list.append({
-            "metric_name": col,
-            "display_name": KPI_DISPLAY_NAMES.get(col, col),
-            "P10": round(float(series.quantile(0.10)), 2),
-            "P25": round(float(series.quantile(0.25)), 2),
-            "P50": round(float(series.quantile(0.50)), 2),
-            "P75": round(float(series.quantile(0.75)), 2),
-            "P90": round(float(series.quantile(0.90)), 2),
-            "Mean": round(float(series.mean()), 2),
-            "Std": round(float(series.std()), 2),
-        })
+        stats_list.append(
+            {
+                "metric_name": col,
+                "display_name": KPI_DISPLAY_NAMES.get(col, col),
+                "P10": round(float(series.quantile(0.10)), 2),
+                "P25": round(float(series.quantile(0.25)), 2),
+                "P50": round(float(series.quantile(0.50)), 2),
+                "P75": round(float(series.quantile(0.75)), 2),
+                "P90": round(float(series.quantile(0.90)), 2),
+                "Mean": round(float(series.mean()), 2),
+                "Std": round(float(series.std()), 2),
+            }
+        )
 
     df_stats = pd.DataFrame(stats_list)
 
@@ -470,6 +536,7 @@ def compute_portfolio_stats(
 # 6. Main Orchestrator
 # ===========================================================================
 
+
 def run_profiling_and_stats(
     db_path: Path = DEFAULT_DB_PATH,
     heatmap_png: Path = DEFAULT_HEATMAP_PNG,
@@ -479,11 +546,17 @@ def run_profiling_and_stats(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Execute complete Day 37 cluster profiling, correlation, outlier detection, and statistics."""
     # 1. Run KMeans Clustering & Extract Raw Features
-    df_clustered, kmeans_model, elbow_data = run_clustering(db_path=db_path, output_csv=cluster_labels_csv)
+    df_clustered, kmeans_model, elbow_data = run_clustering(
+        db_path=db_path, output_csv=cluster_labels_csv
+    )
 
     # 2. Update cluster labels with agreed descriptive names
-    df_clustered["cluster_name"] = df_clustered["cluster_id"].map(CLUSTER_DESCRIPTIVE_NAMES)
-    output_clusters = df_clustered[["company_id", "cluster_id", "cluster_name", "distance_from_centroid"]].copy()
+    df_clustered["cluster_name"] = df_clustered["cluster_id"].map(
+        CLUSTER_DESCRIPTIVE_NAMES
+    )
+    output_clusters = df_clustered[
+        ["company_id", "cluster_id", "cluster_name", "distance_from_centroid"]
+    ].copy()
     output_clusters.to_csv(cluster_labels_csv, index=False)
 
     # 3. Cluster Profiling Statistics
@@ -493,13 +566,19 @@ def run_profiling_and_stats(
     df_10kpis = load_10_kpis_data(db_path=db_path)
 
     # 5. Correlation Heatmap
-    generate_correlation_heatmap(df_10kpis, output_path=heatmap_png, kpi_cols=KPI_10_COLUMNS)
+    generate_correlation_heatmap(
+        df_10kpis, output_path=heatmap_png, kpi_cols=KPI_10_COLUMNS
+    )
 
     # 6. Sector Outlier Detection (|Z| > 3)
-    df_outliers = detect_sector_outliers(df_10kpis, metric_cols=KPI_10_COLUMNS, threshold=3.0, output_path=outlier_csv)
+    df_outliers = detect_sector_outliers(
+        df_10kpis, metric_cols=KPI_10_COLUMNS, threshold=3.0, output_path=outlier_csv
+    )
 
     # 7. Portfolio Distribution Statistics
-    df_stats = compute_portfolio_stats(df_10kpis, metric_cols=KPI_10_COLUMNS, output_path=stats_csv)
+    df_stats = compute_portfolio_stats(
+        df_10kpis, metric_cols=KPI_10_COLUMNS, output_path=stats_csv
+    )
 
     return df_profiles, df_10kpis, df_outliers, df_stats
 
@@ -508,12 +587,32 @@ def run_profiling_and_stats(
 # CLI Main
 # ===========================================================================
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Day 37 — Cluster Profiling & Financial Statistics.")
-    parser.add_argument("--db", type=str, default=str(DEFAULT_DB_PATH), help="Database path.")
-    parser.add_argument("--heatmap", type=str, default=str(DEFAULT_HEATMAP_PNG), help="Correlation heatmap path.")
-    parser.add_argument("--outliers", type=str, default=str(DEFAULT_OUTLIER_CSV), help="Outlier report CSV path.")
-    parser.add_argument("--stats", type=str, default=str(DEFAULT_STATS_CSV), help="Portfolio stats CSV path.")
+    parser = argparse.ArgumentParser(
+        description="Day 37 — Cluster Profiling & Financial Statistics."
+    )
+    parser.add_argument(
+        "--db", type=str, default=str(DEFAULT_DB_PATH), help="Database path."
+    )
+    parser.add_argument(
+        "--heatmap",
+        type=str,
+        default=str(DEFAULT_HEATMAP_PNG),
+        help="Correlation heatmap path.",
+    )
+    parser.add_argument(
+        "--outliers",
+        type=str,
+        default=str(DEFAULT_OUTLIER_CSV),
+        help="Outlier report CSV path.",
+    )
+    parser.add_argument(
+        "--stats",
+        type=str,
+        default=str(DEFAULT_STATS_CSV),
+        help="Portfolio stats CSV path.",
+    )
     args = parser.parse_args()
 
     print("=" * 75)
@@ -529,22 +628,49 @@ def main():
 
     print("\n[1] CLUSTER PROFILES (MEAN & MEDIAN PER CLUSTER):")
     for _, row in df_prof.iterrows():
-        print(f"\n  Cluster {row['cluster_id']}: {row['cluster_name']} ({row['company_count']} companies)")
+        print(
+            f"\n  Cluster {row['cluster_id']}: {row['cluster_name']} ({row['company_count']} companies)"
+        )
         print(f"    • Sample: {row['sample_companies']}")
-        print(f"    • ROE (%):        Mean = {row['return_on_equity_pct_mean']:5.2f}%, Median = {row['return_on_equity_pct_median']:5.2f}%")
-        print(f"    • Debt/Equity:    Mean = {row['debt_to_equity_mean']:5.2f}x,  Median = {row['debt_to_equity_median']:5.2f}x")
-        print(f"    • Revenue CAGR 5Y:Mean = {row['revenue_cagr_5yr_mean']:5.2f}%, Median = {row['revenue_cagr_5yr_median']:5.2f}%")
-        print(f"    • FCF CAGR 5Y:    Mean = {row['fcf_cagr_5yr_mean']:5.2f}%, Median = {row['fcf_cagr_5yr_median']:5.2f}%")
-        print(f"    • OPM (%):        Mean = {row['operating_profit_margin_pct_mean']:5.2f}%, Median = {row['operating_profit_margin_pct_median']:5.2f}%")
+        print(
+            f"    • ROE (%):        Mean = {row['return_on_equity_pct_mean']:5.2f}%, Median = {row['return_on_equity_pct_median']:5.2f}%"
+        )
+        print(
+            f"    • Debt/Equity:    Mean = {row['debt_to_equity_mean']:5.2f}x,  Median = {row['debt_to_equity_median']:5.2f}x"
+        )
+        print(
+            f"    • Revenue CAGR 5Y:Mean = {row['revenue_cagr_5yr_mean']:5.2f}%, Median = {row['revenue_cagr_5yr_median']:5.2f}%"
+        )
+        print(
+            f"    • FCF CAGR 5Y:    Mean = {row['fcf_cagr_5yr_mean']:5.2f}%, Median = {row['fcf_cagr_5yr_median']:5.2f}%"
+        )
+        print(
+            f"    • OPM (%):        Mean = {row['operating_profit_margin_pct_mean']:5.2f}%, Median = {row['operating_profit_margin_pct_median']:5.2f}%"
+        )
 
     print("\n[2] OUTLIER DETECTION (|Z-Score| > 3 by Sector):")
     if not df_out.empty:
-        print(df_out[["company_id", "sector", "metric_name", "metric_value", "z_score", "outlier_type"]].to_string(index=False))
+        print(
+            df_out[
+                [
+                    "company_id",
+                    "sector",
+                    "metric_name",
+                    "metric_value",
+                    "z_score",
+                    "outlier_type",
+                ]
+            ].to_string(index=False)
+        )
     else:
         print("  No extreme outliers (|Z| > 3) found.")
 
     print("\n[3] PORTFOLIO DISTRIBUTION STATISTICS:")
-    print(df_stats[["display_name", "P10", "P25", "P50", "P75", "P90", "Mean", "Std"]].to_string(index=False))
+    print(
+        df_stats[
+            ["display_name", "P10", "P25", "P50", "P75", "P90", "Mean", "Std"]
+        ].to_string(index=False)
+    )
 
     print("\n[SUCCESS] All Day 37 deliverables generated:")
     print(f"  • Heatmap:  {args.heatmap}")

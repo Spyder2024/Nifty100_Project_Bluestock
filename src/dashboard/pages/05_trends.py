@@ -49,18 +49,18 @@ if ratios.empty:
 
 # ── Metric catalogue (only those actually present in the DataFrame) ───
 METRIC_CATALOG: dict[str, str] = {
-    "roe":                "ROE (%)",
-    "roce":               "ROCE (%)",
-    "net_profit_margin":  "Net Profit Margin (%)",
-    "opm":                "OPM (%)",
-    "debt_to_equity":     "Debt-to-Equity",
-    "current_ratio":      "Current Ratio",
-    "pe_ratio":           "P/E Ratio",
-    "price_to_book":      "P/B Ratio",
-    "revenue_cagr_5yr":   "Revenue CAGR 5Y (%)",
-    "net_profit_cagr_5yr":"PAT CAGR 5Y (%)",
-    "earning_yield":      "Earning Yield (%)",
-    "dividend_payout":    "Dividend Payout (%)",
+    "roe": "ROE (%)",
+    "roce": "ROCE (%)",
+    "net_profit_margin": "Net Profit Margin (%)",
+    "opm": "OPM (%)",
+    "debt_to_equity": "Debt-to-Equity",
+    "current_ratio": "Current Ratio",
+    "pe_ratio": "P/E Ratio",
+    "price_to_book": "P/B Ratio",
+    "revenue_cagr_5yr": "Revenue CAGR 5Y (%)",
+    "net_profit_cagr_5yr": "PAT CAGR 5Y (%)",
+    "earning_yield": "Earning Yield (%)",
+    "dividend_payout": "Dividend Payout (%)",
 }
 
 present = {k: v for k, v in METRIC_CATALOG.items() if k in ratios.columns}
@@ -86,23 +86,33 @@ if not chosen_cols:
 
 # ── Plotly multi-line chart ───────────────────────────────────────────
 PALETTE = [
-    "#1E88E5", "#E53935", "#43A047", "#FB8C00",
-    "#8E24AA", "#00ACC1", "#6D4C41", "#546E7A",
-    "#D81B60", "#3949AB", "#7CB342",
+    "#1E88E5",
+    "#E53935",
+    "#43A047",
+    "#FB8C00",
+    "#8E24AA",
+    "#00ACC1",
+    "#6D4C41",
+    "#546E7A",
+    "#D81B60",
+    "#3949AB",
+    "#7CB342",
 ]
 
 fig = go.Figure()
 
 for i, col in enumerate(chosen_cols):
-    fig.add_trace(go.Scatter(
-        x=ratios["year"],
-        y=ratios[col],
-        name=present[col],
-        mode="lines+markers",
-        line=dict(color=PALETTE[i % len(PALETTE)], width=2),
-        marker=dict(size=5),
-        connectgaps=True,
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=ratios["year"],
+            y=ratios[col],
+            name=present[col],
+            mode="lines+markers",
+            line=dict(color=PALETTE[i % len(PALETTE)], width=2),
+            marker=dict(size=5),
+            connectgaps=True,
+        )
+    )
 
 fig.update_layout(
     xaxis_title="Year",

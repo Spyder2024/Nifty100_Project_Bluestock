@@ -10,7 +10,7 @@ Endpoints:
 from __future__ import annotations
 
 import sqlite3
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -89,20 +89,34 @@ async def list_sectors() -> Dict[str, Any]:
         sector_summary = []
         for sec_name, grp in merged.groupby("sector_name"):
             c_count = len(grp)
-            med_roe = float(grp["roe"].dropna().median()) if not grp["roe"].dropna().empty else 0.0
-            med_de = float(grp["debt_to_equity"].dropna().median()) if not grp["debt_to_equity"].dropna().empty else 0.0
-            med_pe = float(grp["computed_pe"].dropna().median()) if not grp["computed_pe"].dropna().empty else 0.0
+            med_roe = (
+                float(grp["roe"].dropna().median())
+                if not grp["roe"].dropna().empty
+                else 0.0
+            )
+            med_de = (
+                float(grp["debt_to_equity"].dropna().median())
+                if not grp["debt_to_equity"].dropna().empty
+                else 0.0
+            )
+            med_pe = (
+                float(grp["computed_pe"].dropna().median())
+                if not grp["computed_pe"].dropna().empty
+                else 0.0
+            )
 
             sec_id = grp["sector_id"].iloc[0] if not grp.empty else sec_name
 
-            sector_summary.append({
-                "sector_id": sec_id,
-                "sector_name": sec_name,
-                "company_count": c_count,
-                "median_roe": round(med_roe, 2),
-                "median_pe": round(med_pe, 2) if not np.isnan(med_pe) else None,
-                "median_de": round(med_de, 2),
-            })
+            sector_summary.append(
+                {
+                    "sector_id": sec_id,
+                    "sector_name": sec_name,
+                    "company_count": c_count,
+                    "median_roe": round(med_roe, 2),
+                    "median_pe": round(med_pe, 2) if not np.isnan(med_pe) else None,
+                    "median_de": round(med_de, 2),
+                }
+            )
 
         sector_summary.sort(key=lambda x: x["company_count"], reverse=True)
 

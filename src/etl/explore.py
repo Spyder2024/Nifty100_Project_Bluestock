@@ -22,11 +22,18 @@ logger = logging.getLogger(__name__)
 # Query functions — each takes conn, returns list[dict]
 # ===================================================================
 
+
 def q_top_revenue_companies(conn, n=10):
     """Q01: Top N companies by latest-year revenue."""
     return [
-        dict(company_id=r[0], company_name=r[1], year=r[2],
-             revenue=r[3], net_income=r[4], opm=r[5])
+        dict(
+            company_id=r[0],
+            company_name=r[1],
+            year=r[2],
+            revenue=r[3],
+            net_income=r[4],
+            opm=r[5],
+        )
         for r in conn.execute(f"""
             SELECT i.company_id, c.company_name, i.year,
                    i.revenue, i.net_income, i.opm
@@ -41,31 +48,36 @@ def q_top_revenue_companies(conn, n=10):
 
 def q_sector_company_count(conn):
     """Q02: Number of companies per sector."""
-    return [
-        dict(sector_id=r[0], company_count=r[1])
-        for r in conn.execute("""
+    return [dict(sector_id=r[0], company_count=r[1]) for r in conn.execute("""
             SELECT sector_id, COUNT(*) AS company_count
             FROM companies
             WHERE sector_id IS NOT NULL
             GROUP BY sector_id ORDER BY company_count DESC
-        """).fetchall()
-    ]
+        """).fetchall()]
 
 
 def q_avg_opm_by_sector(conn):
     """Q03: Average OPM by sector (latest year)."""
     max_yr = conn.execute("SELECT MAX(year) FROM income_statement").fetchone()[0]
     return [
-        dict(sector_id=r[0], avg_opm=round(r[1], 2),
-             n_companies=r[2], min_opm=r[3], max_opm=r[4])
-        for r in conn.execute("""
+        dict(
+            sector_id=r[0],
+            avg_opm=round(r[1], 2),
+            n_companies=r[2],
+            min_opm=r[3],
+            max_opm=r[4],
+        )
+        for r in conn.execute(
+            """
             SELECT c.sector_id, AVG(i.opm), COUNT(*),
                    MIN(i.opm), MAX(i.opm)
             FROM income_statement i
             JOIN companies c ON i.company_id = c.company_id
             WHERE i.year = ? AND i.opm IS NOT NULL
             GROUP BY c.sector_id ORDER BY AVG(i.opm) DESC
-        """, (max_yr,)).fetchall()
+        """,
+            (max_yr,),
+        ).fetchall()
     ]
 
 
@@ -74,22 +86,31 @@ def q_top_roe_companies(conn, n=10):
     max_yr = conn.execute("SELECT MAX(year) FROM ratios").fetchone()[0]
     return [
         dict(company_id=r[0], company_name=r[1], roe=r[2], roa=r[3], roce=r[4])
-        for r in conn.execute(f"""
+        for r in conn.execute(
+            f"""
             SELECT r.company_id, c.company_name, r.roe, r.roa, r.roce
             FROM ratios r
             JOIN companies c ON r.company_id = c.company_id
             WHERE r.year = ? AND r.roe IS NOT NULL
             ORDER BY r.roe DESC LIMIT {n}
-        """, (max_yr,)).fetchall()
+        """,
+            (max_yr,),
+        ).fetchall()
     ]
 
 
 def q_yoy_revenue_growth(conn, n=5):
     """Q05: Year-over-year revenue growth for top N (by latest revenue)."""
     return [
-        dict(company_id=r[0], company_name=r[1],
-             revenue_latest=r[2], revenue_prev=r[3], yoy_growth_pct=r[4])
-        for r in conn.execute("""
+        dict(
+            company_id=r[0],
+            company_name=r[1],
+            revenue_latest=r[2],
+            revenue_prev=r[3],
+            yoy_growth_pct=r[4],
+        )
+        for r in conn.execute(
+            """
             SELECT c.company_id, c.company_name,
                    cur.revenue, prev.revenue,
                    ROUND((cur.revenue - prev.revenue)
@@ -110,23 +131,30 @@ def q_yoy_revenue_growth(conn, n=5):
               AND prev.revenue IS NOT NULL
               AND prev.revenue > 0
             ORDER BY cur.revenue DESC LIMIT ?
-        """, (n,)).fetchall()
+        """,
+            (n,),
+        ).fetchall()
     ]
+
 
 def q_loss_making_companies(conn):
     """Q06: Companies with negative net income in latest year."""
     max_yr = conn.execute("SELECT MAX(year) FROM income_statement").fetchone()[0]
     return [
-        dict(company_id=r[0], company_name=r[1], year=r[2],
-             revenue=r[3], net_income=r[4])
-        for r in conn.execute("""
+        dict(
+            company_id=r[0], company_name=r[1], year=r[2], revenue=r[3], net_income=r[4]
+        )
+        for r in conn.execute(
+            """
             SELECT i.company_id, c.company_name, i.year,
                    i.revenue, i.net_income
             FROM income_statement i
             JOIN companies c ON i.company_id = c.company_id
             WHERE i.year = ? AND i.net_income < 0
             ORDER BY i.net_income ASC
-        """, (max_yr,)).fetchall()
+        """,
+            (max_yr,),
+        ).fetchall()
     ]
 
 
@@ -135,13 +163,16 @@ def q_avg_de_by_sector(conn):
     max_yr = conn.execute("SELECT MAX(year) FROM ratios").fetchone()[0]
     return [
         dict(sector_id=r[0], avg_de=round(r[1], 2), n_companies=r[2])
-        for r in conn.execute("""
+        for r in conn.execute(
+            """
             SELECT c.sector_id, AVG(r.debt_to_equity), COUNT(*)
             FROM ratios r
             JOIN companies c ON r.company_id = c.company_id
             WHERE r.year = ? AND r.debt_to_equity IS NOT NULL
             GROUP BY c.sector_id ORDER BY AVG(r.debt_to_equity) DESC
-        """, (max_yr,)).fetchall()
+        """,
+            (max_yr,),
+        ).fetchall()
     ]
 
 
@@ -150,21 +181,30 @@ def q_highest_dividend_payout(conn, n=10):
     max_yr = conn.execute("SELECT MAX(year) FROM ratios").fetchone()[0]
     return [
         dict(company_id=r[0], company_name=r[1], dividend_payout=r[2])
-        for r in conn.execute(f"""
+        for r in conn.execute(
+            f"""
             SELECT r.company_id, c.company_name, r.dividend_payout
             FROM ratios r
             JOIN companies c ON r.company_id = c.company_id
             WHERE r.year = ? AND r.dividend_payout IS NOT NULL
             ORDER BY r.dividend_payout DESC LIMIT {n}
-        """, (max_yr,)).fetchall()
+        """,
+            (max_yr,),
+        ).fetchall()
     ]
 
 
 def q_data_coverage_per_year(conn):
     """Q09: Company count per year, per source table."""
     rows = []
-    for tbl in ("balance_sheet", "income_statement", "cash_flow",
-                "ratios", "prices", "market_cap"):
+    for tbl in (
+        "balance_sheet",
+        "income_statement",
+        "cash_flow",
+        "ratios",
+        "prices",
+        "market_cap",
+    ):
         for r in conn.execute(f"""
             SELECT year, COUNT(DISTINCT company_id)
             FROM {tbl} GROUP BY year ORDER BY year
@@ -176,16 +216,24 @@ def q_data_coverage_per_year(conn):
 def q_bs_balance_issues(conn, threshold_pct=5.0):
     """Q10: Companies where BS imbalance exceeds threshold."""
     return [
-        dict(company_id=r[0], year=r[1], total_assets=r[2],
-             bs_balance=r[3], imbalance_pct=r[4])
-        for r in conn.execute("""
+        dict(
+            company_id=r[0],
+            year=r[1],
+            total_assets=r[2],
+            bs_balance=r[3],
+            imbalance_pct=r[4],
+        )
+        for r in conn.execute(
+            """
             SELECT company_id, year, total_assets, bs_balance,
                    ROUND(ABS(bs_balance) * 100.0 / total_assets, 2)
             FROM balance_sheet
             WHERE total_assets > 0
               AND ABS(bs_balance) * 100.0 / total_assets > ?
             ORDER BY 5 DESC
-        """, (threshold_pct,)).fetchall()
+        """,
+            (threshold_pct,),
+        ).fetchall()
     ]
 
 
@@ -206,28 +254,46 @@ def q_key_metric_summary(conn):
                        COUNT(*) - SUM(CASE WHEN {col} IS NULL THEN 1 ELSE 0 END)
                 FROM {tbl}
             """).fetchone()
-            results.append(dict(
-                metric=col, table=tbl,
-                min_val=round(r[0], 2) if r[0] is not None else None,
-                max_val=round(r[1], 2) if r[1] is not None else None,
-                avg_val=round(r[2], 2) if r[2] is not None else None,
-                total_rows=r[3], non_null_rows=r[4],
-            ))
+            results.append(
+                dict(
+                    metric=col,
+                    table=tbl,
+                    min_val=round(r[0], 2) if r[0] is not None else None,
+                    max_val=round(r[1], 2) if r[1] is not None else None,
+                    avg_val=round(r[2], 2) if r[2] is not None else None,
+                    total_rows=r[3],
+                    non_null_rows=r[4],
+                )
+            )
         except sqlite3.OperationalError:
-            results.append(dict(metric=col, table=tbl,
-                                min_val=None, max_val=None,
-                                avg_val=None, total_rows=0, non_null_rows=0))
+            results.append(
+                dict(
+                    metric=col,
+                    table=tbl,
+                    min_val=None,
+                    max_val=None,
+                    avg_val=None,
+                    total_rows=0,
+                    non_null_rows=0,
+                )
+            )
     return results
 
 
 def q_companies_per_table(conn):
     """Q12: Distinct company count per table."""
     results = []
-    for tbl in ("balance_sheet", "income_statement", "cash_flow",
-                "ratios", "prices", "market_cap"):
-        cnt = conn.execute(
-            f"SELECT COUNT(DISTINCT company_id) FROM {tbl}"
-        ).fetchone()[0]
+    for tbl in (
+        "balance_sheet",
+        "income_statement",
+        "cash_flow",
+        "ratios",
+        "prices",
+        "market_cap",
+    ):
+        cnt = conn.execute(f"SELECT COUNT(DISTINCT company_id) FROM {tbl}").fetchone()[
+            0
+        ]
         results.append(dict(table_name=tbl, distinct_companies=cnt))
     return results
 
@@ -237,24 +303,25 @@ def q_companies_per_table(conn):
 # ===================================================================
 
 ALL_QUERIES = [
-    ("Q01_top_revenue",    "Top 10 by revenue (latest year)",      q_top_revenue_companies),
-    ("Q02_sector_count",   "Companies per sector",                 q_sector_company_count),
-    ("Q03_avg_opm_sector", "Avg OPM by sector",                   q_avg_opm_by_sector),
-    ("Q04_top_roe",        "Top 10 by ROE",                       q_top_roe_companies),
-    ("Q05_yoy_growth",     "YoY revenue growth (top 5)",           q_yoy_revenue_growth),
-    ("Q06_losses",         "Loss-making companies (latest year)",  q_loss_making_companies),
-    ("Q07_avg_de_sector",  "Avg debt-to-equity by sector",        q_avg_de_by_sector),
-    ("Q08_div_payout",     "Highest dividend payout",              q_highest_dividend_payout),
-    ("Q09_coverage",       "Data coverage per year & table",       q_data_coverage_per_year),
-    ("Q10_bs_issues",      "BS balance issues (>5%)",              q_bs_balance_issues),
-    ("Q11_metric_stats",   "Key metric min/max/avg",               q_key_metric_summary),
-    ("Q12_companies_tbl",  "Distinct companies per table",         q_companies_per_table),
+    ("Q01_top_revenue", "Top 10 by revenue (latest year)", q_top_revenue_companies),
+    ("Q02_sector_count", "Companies per sector", q_sector_company_count),
+    ("Q03_avg_opm_sector", "Avg OPM by sector", q_avg_opm_by_sector),
+    ("Q04_top_roe", "Top 10 by ROE", q_top_roe_companies),
+    ("Q05_yoy_growth", "YoY revenue growth (top 5)", q_yoy_revenue_growth),
+    ("Q06_losses", "Loss-making companies (latest year)", q_loss_making_companies),
+    ("Q07_avg_de_sector", "Avg debt-to-equity by sector", q_avg_de_by_sector),
+    ("Q08_div_payout", "Highest dividend payout", q_highest_dividend_payout),
+    ("Q09_coverage", "Data coverage per year & table", q_data_coverage_per_year),
+    ("Q10_bs_issues", "BS balance issues (>5%)", q_bs_balance_issues),
+    ("Q11_metric_stats", "Key metric min/max/avg", q_key_metric_summary),
+    ("Q12_companies_tbl", "Distinct companies per table", q_companies_per_table),
 ]
 
 
 # ===================================================================
 # Orchestrator
 # ===================================================================
+
 
 def run_exploration(
     db_path: str | None = None,
@@ -284,8 +351,9 @@ def run_exploration(
         except Exception as exc:
             logger.error("%s failed: %s", qid, exc)
             summary[qid] = dict(status="ERROR", rows=0, error=str(exc)[:200])
-            all_rows.append(dict(query_id=qid, query_description=desc,
-                                 error=str(exc)[:200]))
+            all_rows.append(
+                dict(query_id=qid, query_description=desc, error=str(exc)[:200])
+            )
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(all_rows[0].keys()) if all_rows else ["query_id", "error"]
@@ -294,15 +362,16 @@ def run_exploration(
         writer.writeheader()
         writer.writerows(all_rows)
 
-    if  own_conn:
+    if own_conn:
         conn.close()
-        
+
     return dict(summary=summary, total_rows=len(all_rows))
 
 
 # ===================================================================
 # Sprint 1 Retrospective
 # ===================================================================
+
 
 def generate_retro(project_root: str) -> str:
     """Build Sprint 1 retrospective from live DB stats."""
@@ -313,11 +382,15 @@ def generate_retro(project_root: str) -> str:
     n_sectors = conn.execute("SELECT COUNT(*) FROM sectors").fetchone()[0]
 
     tbl_rows = {}
-    for tbl in ("balance_sheet", "income_statement", "cash_flow",
-                "ratios", "prices", "market_cap"):
-        tbl_rows[tbl] = conn.execute(
-            f"SELECT COUNT(*) FROM {tbl}"
-        ).fetchone()[0]
+    for tbl in (
+        "balance_sheet",
+        "income_statement",
+        "cash_flow",
+        "ratios",
+        "prices",
+        "market_cap",
+    ):
+        tbl_rows[tbl] = conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
     conn.close()
 
     total = sum(tbl_rows.values())

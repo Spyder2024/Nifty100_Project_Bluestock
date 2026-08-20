@@ -8,7 +8,6 @@ Verifies loader reads correct row counts and column names for core & supporting 
 import pytest
 from src.etl.loader import (
     load_all_core,
-    load_all_supporting,
     load_core_file,
     load_support_file,
 )
@@ -36,7 +35,14 @@ def test_03_load_balancesheet():
     """Verify balancesheet table row count and essential balance sheet columns."""
     df = load_core_file("balancesheet")
     assert len(df) >= 1200
-    expected_cols = ["company_id", "year", "equity_capital", "reserves", "borrowings", "total_assets"]
+    expected_cols = [
+        "company_id",
+        "year",
+        "equity_capital",
+        "reserves",
+        "borrowings",
+        "total_assets",
+    ]
     for col in expected_cols:
         assert col in df.columns, f"Column '{col}' missing from balancesheet dataset"
 
@@ -45,7 +51,13 @@ def test_04_load_cashflow():
     """Verify cashflow table row count and CFO/Capex columns."""
     df = load_core_file("cashflow")
     assert len(df) >= 1000
-    expected_cols = ["company_id", "year", "operating_activity", "investing_activity", "financing_activity"]
+    expected_cols = [
+        "company_id",
+        "year",
+        "operating_activity",
+        "investing_activity",
+        "financing_activity",
+    ]
     for col in expected_cols:
         assert col in df.columns, f"Column '{col}' missing from cashflow dataset"
 
@@ -82,7 +94,9 @@ def test_08_load_documents_and_analysis():
     docs = load_core_file("documents")
     analysis = load_core_file("analysis")
     assert len(docs) >= 1500
-    assert "Annual_Report" in docs.columns or "annual_report" in [c.lower() for c in docs.columns]
+    assert "Annual_Report" in docs.columns or "annual_report" in [
+        c.lower() for c in docs.columns
+    ]
     assert len(analysis) >= 10
 
 
@@ -91,7 +105,15 @@ def test_09_load_all_core_dict():
     datasets = load_all_core()
     assert isinstance(datasets, dict)
     assert len(datasets) == 7
-    expected_keys = ["companies", "profitandloss", "balancesheet", "cashflow", "analysis", "documents", "prosandcons"]
+    expected_keys = [
+        "companies",
+        "profitandloss",
+        "balancesheet",
+        "cashflow",
+        "analysis",
+        "documents",
+        "prosandcons",
+    ]
     for key in expected_keys:
         assert key in datasets
         assert len(datasets[key]) > 0

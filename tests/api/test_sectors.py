@@ -10,7 +10,6 @@ Tests:
 """
 
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 
@@ -36,7 +35,11 @@ def test_list_all_sectors():
 
 def test_get_sector_it_companies():
     """Verify /sectors/IT and /api/v1/sectors/IT return companies from IT sector only."""
-    for path in ["/api/v1/sectors/IT", "/sectors/IT", "/api/v1/sectors/Information%20Technology"]:
+    for path in [
+        "/api/v1/sectors/IT",
+        "/sectors/IT",
+        "/api/v1/sectors/Information%20Technology",
+    ]:
         resp = client.get(path)
         assert resp.status_code == 200
         data = resp.json()

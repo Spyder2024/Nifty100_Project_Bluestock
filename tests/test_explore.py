@@ -11,8 +11,6 @@ import pytest
 
 from src.etl.explore import (
     ALL_QUERIES,
-    q_avg_de_by_sector,
-    q_avg_opm_by_sector,
     q_bs_balance_issues,
     q_companies_per_table,
     q_data_coverage_per_year,
@@ -59,16 +57,18 @@ def db():
         conn.execute(
             "INSERT INTO income_statement "
             "(company_id,year,revenue,net_income,opm,tax_expense,eps) "
-            "VALUES (?,?,?,?,?,?,?)", ("TCS", yr, rev, ni, opm, tax, eps)
+            "VALUES (?,?,?,?,?,?,?)",
+            ("TCS", yr, rev, ni, opm, tax, eps),
         )
         conn.execute(
             "INSERT INTO ratios (company_id,year,roe,opm) VALUES (?,?,48.0,?)",
-            ("TCS", yr, opm)
+            ("TCS", yr, opm),
         )
         conn.execute(
             "INSERT INTO balance_sheet "
             "(company_id,year,total_assets,total_liabilities,total_equity) "
-            "VALUES (?,?,200000,120000,80000)", ("TCS", yr)
+            "VALUES (?,?,200000,120000,80000)",
+            ("TCS", yr),
         )
 
     # INFY: loss year + recovery
@@ -117,6 +117,7 @@ def db():
 
 
 # ==================================================================
+
 
 class TestTopRevenue:
     def test_returns_list(self, db):
@@ -212,15 +213,14 @@ class TestRunExploration:
         assert results["total_rows"] > 0
 
         ok_count = sum(
-            1 for info in results["summary"].values()
-            if info["status"] == "OK"
+            1 for info in results["summary"].values() if info["status"] == "OK"
         )
         # At least 8 of 12 queries should succeed with the fixture data
         assert ok_count >= 8, (
             f"Only {ok_count}/12 queries succeeded. "
             f"Failures: {[(k,v) for k,v in results['summary'].items() if v['status'] != 'OK']}"
         )
-        
+
     def test_csv_readable(self, db, tmp_path):
         db_path = str(tmp_path / "test.db")
         disk = sqlite3.connect(db_path)

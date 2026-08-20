@@ -10,20 +10,16 @@ Endpoints:
 from __future__ import annotations
 
 import sqlite3
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 
 from src.analytics.peer import (
-    ALL_PEER_GROUPS,
-    PEER_GROUP_MAP,
     PEER_METRICS,
     compute_peer_percentiles,
     resolve_peer_group,
 )
-from src.analytics.radar import RADAR_METRICS
 from src.api.routers.health import get_db_path
 
 router = APIRouter(prefix="/peers", tags=["Peers"])
@@ -175,7 +171,11 @@ async def get_peer_group_percentiles(group_name: str) -> Dict[str, Any]:
                     "metrics": {},
                 }
             by_company[cid]["metrics"][r["metric_name"]] = {
-                "raw_value": round(float(r["raw_value"]), 2) if pd.notna(r["raw_value"]) else None,
+                "raw_value": (
+                    round(float(r["raw_value"]), 2)
+                    if pd.notna(r["raw_value"])
+                    else None
+                ),
                 "percentile_rank": round(float(r["percentile_rank"]), 1),
             }
 
@@ -229,8 +229,12 @@ async def get_peer_comparison(ticker: str) -> Dict[str, Any]:
         df_imputed = df.copy()
         for m in eight_axes:
             if m in df_imputed.columns:
-                df_imputed[m] = df_imputed.groupby("_peer_group")[m].transform(lambda s: s.fillna(s.median()))
-                df_imputed[m] = df_imputed[m].fillna(df_imputed[m].median()).fillna(50.0)
+                df_imputed[m] = df_imputed.groupby("_peer_group")[m].transform(
+                    lambda s: s.fillna(s.median())
+                )
+                df_imputed[m] = (
+                    df_imputed[m].fillna(df_imputed[m].median()).fillna(50.0)
+                )
 
         pct_df = compute_peer_percentiles(
             df_imputed,
@@ -261,7 +265,11 @@ async def get_peer_comparison(ticker: str) -> Dict[str, Any]:
         # Benchmark leader (highest average percentile in peer group)
         score_by_co = peer_sub.groupby("company_id")["percentile_rank"].mean()
         bench_id = score_by_co.idxmax() if not score_by_co.empty else cid
-        bench_name = df.loc[df["company_id"] == bench_id, "company_name"].iloc[0] if bench_id in df["company_id"].values else co_name
+        bench_name = (
+            df.loc[df["company_id"] == bench_id, "company_name"].iloc[0]
+            if bench_id in df["company_id"].values
+            else co_name
+        )
 
         bench_sub = peer_sub[peer_sub["company_id"] == bench_id]
         bench_percentiles = {}

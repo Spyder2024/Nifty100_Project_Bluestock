@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker_fmt
@@ -40,7 +41,6 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     Image,
-    KeepTogether,
     PageBreak,
     Paragraph,
     SimpleDocTemplate,
@@ -50,7 +50,9 @@ from reportlab.platypus import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 # ── project root resolution ───────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -83,6 +85,7 @@ AMBER_BG = colors.HexColor("#FFFBEB")
 # Numbered Canvas for Page Numbering (e.g. Page 1 of 2)
 # ===========================================================================
 
+
 class NumberedCanvas(canvas.Canvas):
     """Canvas that computes total page count dynamically for 'Page X of Y'."""
 
@@ -108,7 +111,7 @@ class NumberedCanvas(canvas.Canvas):
         self.setFillColor(colors.HexColor("#94A3B8"))
 
         # Footer
-        footer_text = f"Nifty 100 Financial Intelligence  |  Company Tearsheet  |  Confidential & Proprietary"
+        footer_text = "Nifty 100 Financial Intelligence  |  Company Tearsheet  |  Confidential & Proprietary"
         self.drawString(25, 14, footer_text)
         page_num_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(A4[0] - 25, 14, page_num_str)
@@ -124,6 +127,7 @@ class NumberedCanvas(canvas.Canvas):
 # ===========================================================================
 # Data Retrieval Helpers
 # ===========================================================================
+
 
 def _format_cr(val: Optional[float]) -> str:
     """Format numeric value in Indian Cr notation."""
@@ -161,7 +165,9 @@ def _format_ratio(val: Optional[float], suffix: str = "x") -> str:
         return "N/A"
 
 
-def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> dict[str, Any]:
+def get_company_tearsheet_data(
+    ticker: str, db_path: Path = DEFAULT_DB_PATH
+) -> dict[str, Any]:
     """Extract and aggregate all data needed for a company's tearsheet."""
     if not db_path.exists():
         raise FileNotFoundError(f"Database not found at {db_path}")
@@ -184,11 +190,23 @@ def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> 
 
     if not co_row:
         # Check if ticker matches in other tables
-        co_row = conn.execute("SELECT * FROM companies WHERE company_id = ?", (ticker_clean,)).fetchone()
+        co_row = conn.execute(
+            "SELECT * FROM companies WHERE company_id = ?", (ticker_clean,)
+        ).fetchone()
 
-    company_name = co_row["company_name"] if co_row and "company_name" in co_row.keys() else ticker_clean
-    sector_name = co_row["sector_name"] if co_row and "sector_name" in co_row.keys() and co_row["sector_name"] else (
-        co_row["sector_id"] if co_row and "sector_id" in co_row.keys() else "General"
+    company_name = (
+        co_row["company_name"]
+        if co_row and "company_name" in co_row.keys()
+        else ticker_clean
+    )
+    sector_name = (
+        co_row["sector_name"]
+        if co_row and "sector_name" in co_row.keys() and co_row["sector_name"]
+        else (
+            co_row["sector_id"]
+            if co_row and "sector_id" in co_row.keys()
+            else "General"
+        )
     )
 
     # 2. Income Statement (10 years)
@@ -231,12 +249,12 @@ def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> 
         conn,
         params=(ticker_clean,),
     )
-    df_val = pd.read_sql_query(
+    pd.read_sql_query(
         "SELECT * FROM valuation WHERE company_id = ? ORDER BY year DESC LIMIT 1",
         conn,
         params=(ticker_clean,),
     )
-    df_price = pd.read_sql_query(
+    pd.read_sql_query(
         "SELECT * FROM prices WHERE company_id = ? ORDER BY year DESC LIMIT 1",
         conn,
         params=(ticker_clean,),
@@ -251,8 +269,12 @@ def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> 
         try:
             df_pc = pd.read_csv(PROS_CONS_CSV)
             co_pc = df_pc[df_pc["company_id"].astype(str).str.upper() == ticker_clean]
-            pros = co_pc[co_pc["type"].str.lower() == "pro"]["text"].dropna().tolist()[:4]
-            cons = co_pc[co_pc["type"].str.lower() == "con"]["text"].dropna().tolist()[:4]
+            pros = (
+                co_pc[co_pc["type"].str.lower() == "pro"]["text"].dropna().tolist()[:4]
+            )
+            cons = (
+                co_pc[co_pc["type"].str.lower() == "con"]["text"].dropna().tolist()[:4]
+            )
         except Exception as exc:
             logger.debug("Error reading pros/cons CSV: %s", exc)
 
@@ -279,9 +301,21 @@ def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> 
             if not co_ca.empty:
                 last_ca = co_ca.iloc[-1]
                 cap_pattern = str(last_ca.get("pattern_label", "Reinvestor"))
-                s_cfo = "+" if int(last_ca.get("cfo_sign", 1)) > 0 else ("-" if int(last_ca.get("cfo_sign", 1)) < 0 else "0")
-                s_cfi = "+" if int(last_ca.get("cfi_sign", -1)) > 0 else ("-" if int(last_ca.get("cfi_sign", -1)) < 0 else "0")
-                s_cff = "+" if int(last_ca.get("cff_sign", -1)) > 0 else ("-" if int(last_ca.get("cff_sign", -1)) < 0 else "0")
+                s_cfo = (
+                    "+"
+                    if int(last_ca.get("cfo_sign", 1)) > 0
+                    else ("-" if int(last_ca.get("cfo_sign", 1)) < 0 else "0")
+                )
+                s_cfi = (
+                    "+"
+                    if int(last_ca.get("cfi_sign", -1)) > 0
+                    else ("-" if int(last_ca.get("cfi_sign", -1)) < 0 else "0")
+                )
+                s_cff = (
+                    "+"
+                    if int(last_ca.get("cff_sign", -1)) > 0
+                    else ("-" if int(last_ca.get("cff_sign", -1)) < 0 else "0")
+                )
                 cap_signs = f"({s_cfo}, {s_cfi}, {s_cff})"
         except Exception as exc:
             logger.debug("Error reading capital allocation CSV: %s", exc)
@@ -305,12 +339,20 @@ def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> 
     if not df_ratios.empty:
         latest_r = df_ratios.iloc[-1]
         roe_latest = latest_r.get("roe") or latest_r.get("return_on_equity_pct")
-        roce_latest = latest_r.get("roce") or latest_r.get("return_on_capital_employed_pct")
+        roce_latest = latest_r.get("roce") or latest_r.get(
+            "return_on_capital_employed_pct"
+        )
         de_latest = latest_r.get("debt_to_equity")
-        pe_latest = latest_r.get("price_to_earnings") or latest_r.get("price_to_earnings_ratio") or latest_r.get("pe_ratio")
+        pe_latest = (
+            latest_r.get("price_to_earnings")
+            or latest_r.get("price_to_earnings_ratio")
+            or latest_r.get("pe_ratio")
+        )
 
     if not df_mcap.empty:
-        mcap_latest = df_mcap.iloc[0].get("market_cap_cr") or df_mcap.iloc[0].get("market_cap")
+        mcap_latest = df_mcap.iloc[0].get("market_cap_cr") or df_mcap.iloc[0].get(
+            "market_cap"
+        )
 
     # Latest Cash Flow row
     latest_cf_row = {}
@@ -351,6 +393,7 @@ def get_company_tearsheet_data(ticker: str, db_path: Path = DEFAULT_DB_PATH) -> 
 # Matplotlib Chart Renderers (High Resolution to BytesIO)
 # ===========================================================================
 
+
 def _clean_year_label(yr_str: str) -> str:
     """Turn '2023-03' or '2023' into 'FY23' or '2023'."""
     s = str(yr_str).strip()
@@ -362,14 +405,24 @@ def _clean_year_label(yr_str: str) -> str:
     return s
 
 
-def render_revenue_profit_chart(df_is: pd.DataFrame, width_in=7.2, height_in=2.7, dpi=180) -> io.BytesIO:
+def render_revenue_profit_chart(
+    df_is: pd.DataFrame, width_in=7.2, height_in=2.7, dpi=180
+) -> io.BytesIO:
     """10-year Revenue and Net Profit side-by-side grouped bar chart."""
     fig, ax = plt.subplots(figsize=(width_in, height_in), dpi=dpi)
     fig.patch.set_facecolor("#FFFFFF")
     ax.set_facecolor("#FAFAFC")
 
     if df_is.empty or "revenue" not in df_is.columns:
-        ax.text(0.5, 0.5, "Income Statement Data Unavailable", ha="center", va="center", color="#64748B", fontsize=11)
+        ax.text(
+            0.5,
+            0.5,
+            "Income Statement Data Unavailable",
+            ha="center",
+            va="center",
+            color="#64748B",
+            fontsize=11,
+        )
         ax.axis("off")
     else:
         years = [_clean_year_label(y) for y in df_is["year"]]
@@ -377,21 +430,55 @@ def render_revenue_profit_chart(df_is: pd.DataFrame, width_in=7.2, height_in=2.7
         width = 0.38
 
         rev = pd.to_numeric(df_is["revenue"], errors="coerce").fillna(0)
-        profit = pd.to_numeric(df_is.get("net_income", df_is.get("net_profit", 0)), errors="coerce").fillna(0)
+        profit = pd.to_numeric(
+            df_is.get("net_income", df_is.get("net_profit", 0)), errors="coerce"
+        ).fillna(0)
 
         # Plot bars
-        bars_rev = ax.bar(x - width / 2, rev, width, label="Revenue (Sales)", color="#1E3A8A", alpha=0.95, edgecolor="none", zorder=3)
-        bars_prof = ax.bar(x + width / 2, profit, width, label="Net Profit (PAT)", color="#10B981", alpha=0.95, edgecolor="none", zorder=3)
+        ax.bar(
+            x - width / 2,
+            rev,
+            width,
+            label="Revenue (Sales)",
+            color="#1E3A8A",
+            alpha=0.95,
+            edgecolor="none",
+            zorder=3,
+        )
+        ax.bar(
+            x + width / 2,
+            profit,
+            width,
+            label="Net Profit (PAT)",
+            color="#10B981",
+            alpha=0.95,
+            edgecolor="none",
+            zorder=3,
+        )
 
         ax.set_xticks(x)
         ax.set_xticklabels(years, fontsize=8.5, fontweight="bold", color="#334155")
-        ax.yaxis.set_major_formatter(ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}"))
+        ax.yaxis.set_major_formatter(
+            ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}")
+        )
         ax.tick_params(axis="y", labelsize=8, colors="#475569")
         ax.tick_params(axis="x", colors="#475569")
 
         ax.grid(axis="y", linestyle="--", alpha=0.5, color="#E2E8F0", zorder=0)
-        ax.set_title("10-Year Revenue & Net Profit Track Record (₹ Cr)", fontsize=10, fontweight="bold", color="#0F172A", pad=8)
-        ax.legend(frameon=True, facecolor="#FFFFFF", edgecolor="#CBD5E1", fontsize=8, loc="upper left")
+        ax.set_title(
+            "10-Year Revenue & Net Profit Track Record (₹ Cr)",
+            fontsize=10,
+            fontweight="bold",
+            color="#0F172A",
+            pad=8,
+        )
+        ax.legend(
+            frameon=True,
+            facecolor="#FFFFFF",
+            edgecolor="#CBD5E1",
+            fontsize=8,
+            loc="upper left",
+        )
 
         # Spines
         for spine in ["top", "right"]:
@@ -407,17 +494,43 @@ def render_revenue_profit_chart(df_is: pd.DataFrame, width_in=7.2, height_in=2.7
     return buf
 
 
-def render_profitability_trend_chart(df_ratios: pd.DataFrame, width_in=7.2, height_in=2.5, dpi=180) -> io.BytesIO:
+def render_profitability_trend_chart(
+    df_ratios: pd.DataFrame, width_in=7.2, height_in=2.5, dpi=180
+) -> io.BytesIO:
     """ROE & ROCE multi-year trend line chart."""
     fig, ax = plt.subplots(figsize=(width_in, height_in), dpi=dpi)
     fig.patch.set_facecolor("#FFFFFF")
     ax.set_facecolor("#FAFAFC")
 
-    roe_col = "roe" if "roe" in df_ratios.columns else ("return_on_equity_pct" if "return_on_equity_pct" in df_ratios.columns else None)
-    roce_col = "roce" if "roce" in df_ratios.columns else ("return_on_capital_employed_pct" if "return_on_capital_employed_pct" in df_ratios.columns else None)
+    roe_col = (
+        "roe"
+        if "roe" in df_ratios.columns
+        else (
+            "return_on_equity_pct"
+            if "return_on_equity_pct" in df_ratios.columns
+            else None
+        )
+    )
+    roce_col = (
+        "roce"
+        if "roce" in df_ratios.columns
+        else (
+            "return_on_capital_employed_pct"
+            if "return_on_capital_employed_pct" in df_ratios.columns
+            else None
+        )
+    )
 
     if df_ratios.empty or (roe_col is None and roce_col is None):
-        ax.text(0.5, 0.5, "Ratio Trend Data Unavailable", ha="center", va="center", color="#64748B", fontsize=11)
+        ax.text(
+            0.5,
+            0.5,
+            "Ratio Trend Data Unavailable",
+            ha="center",
+            va="center",
+            color="#64748B",
+            fontsize=11,
+        )
         ax.axis("off")
     else:
         years = [_clean_year_label(y) for y in df_ratios["year"]]
@@ -425,14 +538,39 @@ def render_profitability_trend_chart(df_ratios: pd.DataFrame, width_in=7.2, heig
 
         if roe_col and roe_col in df_ratios.columns:
             roe = pd.to_numeric(df_ratios[roe_col], errors="coerce")
-            ax.plot(x, roe, marker="o", markersize=4.5, linewidth=2, label="ROE (%)", color="#D97706", zorder=4)
+            ax.plot(
+                x,
+                roe,
+                marker="o",
+                markersize=4.5,
+                linewidth=2,
+                label="ROE (%)",
+                color="#D97706",
+                zorder=4,
+            )
 
         if roce_col and roce_col in df_ratios.columns:
             roce = pd.to_numeric(df_ratios[roce_col], errors="coerce")
-            ax.plot(x, roce, marker="s", markersize=4.5, linewidth=2, label="ROCE (%)", color="#2563EB", zorder=4)
+            ax.plot(
+                x,
+                roce,
+                marker="s",
+                markersize=4.5,
+                linewidth=2,
+                label="ROCE (%)",
+                color="#2563EB",
+                zorder=4,
+            )
 
         # 15% hurdle reference line
-        ax.axhline(15, color="#94A3B8", linestyle=":", linewidth=1, label="15% Benchmark", zorder=2)
+        ax.axhline(
+            15,
+            color="#94A3B8",
+            linestyle=":",
+            linewidth=1,
+            label="15% Benchmark",
+            zorder=2,
+        )
 
         ax.set_xticks(x)
         ax.set_xticklabels(years, fontsize=8.5, fontweight="bold", color="#334155")
@@ -441,8 +579,20 @@ def render_profitability_trend_chart(df_ratios: pd.DataFrame, width_in=7.2, heig
         ax.tick_params(axis="x", colors="#475569")
 
         ax.grid(axis="y", linestyle="--", alpha=0.5, color="#E2E8F0", zorder=0)
-        ax.set_title("Profitability Return Ratios Trend (ROE & ROCE %)", fontsize=10, fontweight="bold", color="#0F172A", pad=8)
-        ax.legend(frameon=True, facecolor="#FFFFFF", edgecolor="#CBD5E1", fontsize=8, loc="upper right")
+        ax.set_title(
+            "Profitability Return Ratios Trend (ROE & ROCE %)",
+            fontsize=10,
+            fontweight="bold",
+            color="#0F172A",
+            pad=8,
+        )
+        ax.legend(
+            frameon=True,
+            facecolor="#FFFFFF",
+            edgecolor="#CBD5E1",
+            fontsize=8,
+            loc="upper right",
+        )
 
         for spine in ["top", "right"]:
             ax.spines[spine].set_visible(False)
@@ -457,14 +607,24 @@ def render_profitability_trend_chart(df_ratios: pd.DataFrame, width_in=7.2, heig
     return buf
 
 
-def render_balance_sheet_chart(df_bs: pd.DataFrame, width_in=7.2, height_in=2.5, dpi=180) -> io.BytesIO:
+def render_balance_sheet_chart(
+    df_bs: pd.DataFrame, width_in=7.2, height_in=2.5, dpi=180
+) -> io.BytesIO:
     """Balance Sheet composition stacked bar chart (Net Worth, Borrowings, Other Liabilities)."""
     fig, ax = plt.subplots(figsize=(width_in, height_in), dpi=dpi)
     fig.patch.set_facecolor("#FFFFFF")
     ax.set_facecolor("#FAFAFC")
 
     if df_bs.empty:
-        ax.text(0.5, 0.5, "Balance Sheet Data Unavailable", ha="center", va="center", color="#64748B", fontsize=11)
+        ax.text(
+            0.5,
+            0.5,
+            "Balance Sheet Data Unavailable",
+            ha="center",
+            va="center",
+            color="#64748B",
+            fontsize=11,
+        )
         ax.axis("off")
     else:
         years = [_clean_year_label(y) for y in df_bs["year"]]
@@ -475,31 +635,79 @@ def render_balance_sheet_chart(df_bs: pd.DataFrame, width_in=7.2, height_in=2.5,
         if "total_equity" in df_bs.columns and df_bs["total_equity"].notna().any():
             equity = pd.to_numeric(df_bs["total_equity"], errors="coerce").fillna(0)
         else:
-            sc = pd.to_numeric(df_bs.get("share_capital", df_bs.get("equity_capital", 0)), errors="coerce").fillna(0)
+            sc = pd.to_numeric(
+                df_bs.get("share_capital", df_bs.get("equity_capital", 0)),
+                errors="coerce",
+            ).fillna(0)
             res = pd.to_numeric(df_bs.get("reserves", 0), errors="coerce").fillna(0)
             equity = sc + res
 
         # Borrowings / Debt
-        borrowings = pd.to_numeric(df_bs.get("borrowings", 0), errors="coerce").fillna(0)
+        borrowings = pd.to_numeric(df_bs.get("borrowings", 0), errors="coerce").fillna(
+            0
+        )
 
         # Other Liabilities
-        total_assets = pd.to_numeric(df_bs.get("total_assets", df_bs.get("total_liabilities", 0)), errors="coerce").fillna(0)
+        total_assets = pd.to_numeric(
+            df_bs.get("total_assets", df_bs.get("total_liabilities", 0)),
+            errors="coerce",
+        ).fillna(0)
         other_liab = (total_assets - equity - borrowings).clip(lower=0)
 
         # Stacked bars
-        ax.bar(x, equity, width, label="Net Worth (Equity & Reserves)", color="#2563EB", alpha=0.9, zorder=3)
-        ax.bar(x, borrowings, width, bottom=equity, label="Total Borrowings (Debt)", color="#EF4444", alpha=0.9, zorder=3)
-        ax.bar(x, other_liab, width, bottom=equity + borrowings, label="Other Liabilities", color="#94A3B8", alpha=0.8, zorder=3)
+        ax.bar(
+            x,
+            equity,
+            width,
+            label="Net Worth (Equity & Reserves)",
+            color="#2563EB",
+            alpha=0.9,
+            zorder=3,
+        )
+        ax.bar(
+            x,
+            borrowings,
+            width,
+            bottom=equity,
+            label="Total Borrowings (Debt)",
+            color="#EF4444",
+            alpha=0.9,
+            zorder=3,
+        )
+        ax.bar(
+            x,
+            other_liab,
+            width,
+            bottom=equity + borrowings,
+            label="Other Liabilities",
+            color="#94A3B8",
+            alpha=0.8,
+            zorder=3,
+        )
 
         ax.set_xticks(x)
         ax.set_xticklabels(years, fontsize=8.5, fontweight="bold", color="#334155")
-        ax.yaxis.set_major_formatter(ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}"))
+        ax.yaxis.set_major_formatter(
+            ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}")
+        )
         ax.tick_params(axis="y", labelsize=8, colors="#475569")
         ax.tick_params(axis="x", colors="#475569")
 
         ax.grid(axis="y", linestyle="--", alpha=0.5, color="#E2E8F0", zorder=0)
-        ax.set_title("Balance Sheet Capital Structure Composition (₹ Cr)", fontsize=10, fontweight="bold", color="#0F172A", pad=8)
-        ax.legend(frameon=True, facecolor="#FFFFFF", edgecolor="#CBD5E1", fontsize=7.5, loc="upper left")
+        ax.set_title(
+            "Balance Sheet Capital Structure Composition (₹ Cr)",
+            fontsize=10,
+            fontweight="bold",
+            color="#0F172A",
+            pad=8,
+        )
+        ax.legend(
+            frameon=True,
+            facecolor="#FFFFFF",
+            edgecolor="#CBD5E1",
+            fontsize=7.5,
+            loc="upper left",
+        )
 
         for spine in ["top", "right"]:
             ax.spines[spine].set_visible(False)
@@ -514,14 +722,26 @@ def render_balance_sheet_chart(df_bs: pd.DataFrame, width_in=7.2, height_in=2.5,
     return buf
 
 
-def render_cashflow_waterfall_chart(cf_row: dict, width_in=7.2, height_in=2.2, dpi=180) -> io.BytesIO:
+def render_cashflow_waterfall_chart(
+    cf_row: dict, width_in=7.2, height_in=2.2, dpi=180
+) -> io.BytesIO:
     """Cash Flow waterfall chart for the latest fiscal year."""
     fig, ax = plt.subplots(figsize=(width_in, height_in), dpi=dpi)
     fig.patch.set_facecolor("#FFFFFF")
     ax.set_facecolor("#FAFAFC")
 
-    if not cf_row or not any(cf_row.get(k) for k in ("operating_cf", "investing_cf", "financing_cf")):
-        ax.text(0.5, 0.5, "Latest Cash Flow Data Unavailable", ha="center", va="center", color="#64748B", fontsize=11)
+    if not cf_row or not any(
+        cf_row.get(k) for k in ("operating_cf", "investing_cf", "financing_cf")
+    ):
+        ax.text(
+            0.5,
+            0.5,
+            "Latest Cash Flow Data Unavailable",
+            ha="center",
+            va="center",
+            color="#64748B",
+            fontsize=11,
+        )
         ax.axis("off")
     else:
         cfo = float(cf_row.get("operating_cf") or 0.0)
@@ -529,9 +749,14 @@ def render_cashflow_waterfall_chart(cf_row: dict, width_in=7.2, height_in=2.2, d
         cff = float(cf_row.get("financing_cf") or 0.0)
         net = float(cf_row.get("net_cash_flow") or (cfo + cfi + cff))
 
-        categories = ["Operating (CFO)", "Investing (CFI)", "Financing (CFF)", "Net Change"]
+        categories = [
+            "Operating (CFO)",
+            "Investing (CFI)",
+            "Financing (CFF)",
+            "Net Change",
+        ]
         amounts = [cfo, cfi, cff, net]
-        
+
         # Calculate waterfall bottoms
         bottoms = [0.0, cfo, cfo + cfi, 0.0]
         bar_heights = [cfo, cfi, cff, net]
@@ -543,7 +768,9 @@ def render_cashflow_waterfall_chart(cf_row: dict, width_in=7.2, height_in=2.2, d
         ]
 
         x = np.arange(len(categories))
-        bars = ax.bar(x, bar_heights, 0.45, bottom=bottoms, color=bar_colors, alpha=0.9, zorder=3)
+        bars = ax.bar(
+            x, bar_heights, 0.45, bottom=bottoms, color=bar_colors, alpha=0.9, zorder=3
+        )
 
         # Zero reference line
         ax.axhline(0, color="#64748B", linestyle="-", linewidth=0.8, zorder=2)
@@ -569,13 +796,21 @@ def render_cashflow_waterfall_chart(cf_row: dict, width_in=7.2, height_in=2.2, d
 
         ax.set_xticks(x)
         ax.set_xticklabels(categories, fontsize=8.5, fontweight="bold", color="#334155")
-        ax.yaxis.set_major_formatter(ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}"))
+        ax.yaxis.set_major_formatter(
+            ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}")
+        )
         ax.tick_params(axis="y", labelsize=8, colors="#475569")
         ax.tick_params(axis="x", colors="#475569")
 
         ax.grid(axis="y", linestyle="--", alpha=0.5, color="#E2E8F0", zorder=0)
         yr_label = cf_row.get("year", "Latest FY")
-        ax.set_title(f"Cash Flow Breakdown Waterfall — {yr_label} (₹ Cr)", fontsize=10, fontweight="bold", color="#0F172A", pad=8)
+        ax.set_title(
+            f"Cash Flow Breakdown Waterfall — {yr_label} (₹ Cr)",
+            fontsize=10,
+            fontweight="bold",
+            color="#0F172A",
+            pad=8,
+        )
 
         for spine in ["top", "right"]:
             ax.spines[spine].set_visible(False)
@@ -594,6 +829,7 @@ def render_cashflow_waterfall_chart(cf_row: dict, width_in=7.2, height_in=2.2, d
 # ReportLab Document Builder (Tearsheet Generator)
 # ===========================================================================
 
+
 def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
     """Compile the 2-page company financial tearsheet PDF."""
     output_pdf_path.parent.mkdir(parents=True, exist_ok=True)
@@ -608,15 +844,40 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
         bottomMargin=30,
     )
 
-    styles = getSampleStyleSheet()
+    getSampleStyleSheet()
 
     # Custom Paragraph Styles with WORDWRAP
-    style_normal = ParagraphStyle("TearNormal", fontName="Helvetica", fontSize=8.5, leading=11, textColor=NAVY)
-    style_bold = ParagraphStyle("TearBold", fontName="Helvetica-Bold", fontSize=8.5, leading=11, textColor=NAVY)
-    
-    style_kpi_title = ParagraphStyle("KPITitle", fontName="Helvetica", fontSize=7.5, leading=9, textColor=SLATE_GREY, alignment=1)
-    style_kpi_val = ParagraphStyle("KPIValue", fontName="Helvetica-Bold", fontSize=11, leading=13, textColor=NAVY, alignment=1)
-    style_kpi_sub = ParagraphStyle("KPISub", fontName="Helvetica", fontSize=7, leading=8, textColor=ACCENT_BLUE, alignment=1)
+    ParagraphStyle(
+        "TearNormal", fontName="Helvetica", fontSize=8.5, leading=11, textColor=NAVY
+    )
+    style_bold = ParagraphStyle(
+        "TearBold", fontName="Helvetica-Bold", fontSize=8.5, leading=11, textColor=NAVY
+    )
+
+    style_kpi_title = ParagraphStyle(
+        "KPITitle",
+        fontName="Helvetica",
+        fontSize=7.5,
+        leading=9,
+        textColor=SLATE_GREY,
+        alignment=1,
+    )
+    style_kpi_val = ParagraphStyle(
+        "KPIValue",
+        fontName="Helvetica-Bold",
+        fontSize=11,
+        leading=13,
+        textColor=NAVY,
+        alignment=1,
+    )
+    style_kpi_sub = ParagraphStyle(
+        "KPISub",
+        fontName="Helvetica",
+        fontSize=7,
+        leading=8,
+        textColor=ACCENT_BLUE,
+        alignment=1,
+    )
 
     style_pro_bullet = ParagraphStyle(
         "ProBullet",
@@ -652,18 +913,30 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
         f"<font size=8 color='#94A3B8'>REPORT DATE</font><br/>"
         f"<font size=9 color='#FFFFFF'><b>{datetime.now().strftime('%B %Y')}</b></font><br/>"
         f"<font size=7.5 color='#38BDF8'>LATEST: {data['latest_year']}</font>",
-        ParagraphStyle("HeaderRight", fontName="Helvetica", textColor=WHITE, alignment=2, leading=10),
+        ParagraphStyle(
+            "HeaderRight",
+            fontName="Helvetica",
+            textColor=WHITE,
+            alignment=2,
+            leading=10,
+        ),
     )
-    header_table = Table([[header_left, header_right]], colWidths=[page_width * 0.72, page_width * 0.28])
-    header_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("CORNERPAD", (0, 0), (-1, -1), 4),
-    ]))
+    header_table = Table(
+        [[header_left, header_right]], colWidths=[page_width * 0.72, page_width * 0.28]
+    )
+    header_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), NAVY),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("CORNERPAD", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     story.append(header_table)
     story.append(Spacer(1, 8))
 
@@ -679,33 +952,55 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
         ]
 
     tile_w = page_width / 3.0
-    de_str = _format_ratio(data['de_latest'])
-    de_sub = "Debt-Free" if (data['de_latest'] is not None and data['de_latest'] == 0) else "Leverage"
-    pe_str = _format_ratio(data['pe_latest']) if data['pe_latest'] is not None else "N/A"
+    de_str = _format_ratio(data["de_latest"])
+    de_sub = (
+        "Debt-Free"
+        if (data["de_latest"] is not None and data["de_latest"] == 0)
+        else "Leverage"
+    )
+    pe_str = (
+        _format_ratio(data["pe_latest"]) if data["pe_latest"] is not None else "N/A"
+    )
 
     kpi_grid_data = [
         [
-            _make_kpi_cell("Revenue (TTM/FY)", _format_cr(data["revenue_latest"]), "Topline Scale"),
-            _make_kpi_cell("Net Profit (PAT)", _format_cr(data["net_profit_latest"]), "Bottomline Earnings"),
-            _make_kpi_cell("Return on Equity", _format_pct(data["roe_latest"]), "ROE (%) Target > 15%"),
+            _make_kpi_cell(
+                "Revenue (TTM/FY)", _format_cr(data["revenue_latest"]), "Topline Scale"
+            ),
+            _make_kpi_cell(
+                "Net Profit (PAT)",
+                _format_cr(data["net_profit_latest"]),
+                "Bottomline Earnings",
+            ),
+            _make_kpi_cell(
+                "Return on Equity",
+                _format_pct(data["roe_latest"]),
+                "ROE (%) Target > 15%",
+            ),
         ],
         [
-            _make_kpi_cell("ROCE Ratio", _format_pct(data["roce_latest"]), "Capital Employed Ret"),
+            _make_kpi_cell(
+                "ROCE Ratio", _format_pct(data["roce_latest"]), "Capital Employed Ret"
+            ),
             _make_kpi_cell("Debt to Equity", de_str, de_sub),
             _make_kpi_cell("P/E Valuation", pe_str, "Price to Earnings"),
         ],
     ]
     kpi_table = Table(kpi_grid_data, colWidths=[tile_w, tile_w, tile_w])
-    kpi_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BG),
-        ("BOX", (0, 0), (-1, -1), 1, BORDER_COLOR),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
+    kpi_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BG),
+                ("BOX", (0, 0), (-1, -1), 1, BORDER_COLOR),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
     story.append(kpi_table)
     story.append(Spacer(1, 8))
 
@@ -715,7 +1010,9 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
     story.append(Spacer(1, 6))
 
     # 4. ROE & ROCE Dual Trend Line Chart
-    roe_buf = render_profitability_trend_chart(data["df_ratios"], width_in=7.3, height_in=2.5)
+    roe_buf = render_profitability_trend_chart(
+        data["df_ratios"], width_in=7.3, height_in=2.5
+    )
     story.append(Image(roe_buf, width=page_width, height=185))
 
     # Page Break to Page 2
@@ -731,18 +1028,27 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
         ParagraphStyle("P2HL", fontName="Helvetica-Bold", textColor=WHITE, leading=12),
     )
     p2_header_right = Paragraph(
-        f"<font size=8 color='#94A3B8'>PAGE 2 OF 2</font>",
-        ParagraphStyle("P2HR", fontName="Helvetica", textColor=WHITE, alignment=2, leading=10),
+        "<font size=8 color='#94A3B8'>PAGE 2 OF 2</font>",
+        ParagraphStyle(
+            "P2HR", fontName="Helvetica", textColor=WHITE, alignment=2, leading=10
+        ),
     )
-    p2_header_table = Table([[p2_header_left, p2_header_right]], colWidths=[page_width * 0.8, page_width * 0.2])
-    p2_header_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), NAVY_LIGHT),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
+    p2_header_table = Table(
+        [[p2_header_left, p2_header_right]],
+        colWidths=[page_width * 0.8, page_width * 0.2],
+    )
+    p2_header_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), NAVY_LIGHT),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
     story.append(p2_header_table)
     story.append(Spacer(1, 6))
 
@@ -752,16 +1058,22 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
     story.append(Spacer(1, 6))
 
     # 3. Cash Flow Waterfall Chart
-    cf_buf = render_cashflow_waterfall_chart(data["latest_cf_row"], width_in=7.3, height_in=2.1)
+    cf_buf = render_cashflow_waterfall_chart(
+        data["latest_cf_row"], width_in=7.3, height_in=2.1
+    )
     story.append(Image(cf_buf, width=page_width, height=150))
     story.append(Spacer(1, 6))
 
     # 4. Capital Allocation Badge Card
-    badge_bg = GREEN_BG if data["cap_pattern"] in ("Reinvestor", "Shareholder Returns") else (
-        RED_BG if data["cap_pattern"] == "Distress Signal" else AMBER_BG
+    badge_bg = (
+        GREEN_BG
+        if data["cap_pattern"] in ("Reinvestor", "Shareholder Returns")
+        else (RED_BG if data["cap_pattern"] == "Distress Signal" else AMBER_BG)
     )
-    badge_color = EMERALD_GREEN if data["cap_pattern"] in ("Reinvestor", "Shareholder Returns") else (
-        ROSE_RED if data["cap_pattern"] == "Distress Signal" else AMBER
+    badge_color = (
+        EMERALD_GREEN
+        if data["cap_pattern"] in ("Reinvestor", "Shareholder Returns")
+        else (ROSE_RED if data["cap_pattern"] == "Distress Signal" else AMBER)
     )
     badge_text = Paragraph(
         f"<font size=8 color='{SLATE_GREY.hexval()}'><b>CAPITAL ALLOCATION PROFILE:</b></font> &nbsp; "
@@ -771,14 +1083,18 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
         ParagraphStyle("CapBadge", fontName="Helvetica", leading=10, wordWrap="CJK"),
     )
     badge_table = Table([[badge_text]], colWidths=[page_width])
-    badge_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), badge_bg),
-        ("BOX", (0, 0), (-1, -1), 1, badge_color),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-    ]))
+    badge_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), badge_bg),
+                ("BOX", (0, 0), (-1, -1), 1, badge_color),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
     story.append(badge_table)
     story.append(Spacer(1, 6))
 
@@ -786,38 +1102,54 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
     col_w = (page_width - 10) / 2.0
 
     pros_flowables = [
-        Paragraph("<font size=8.5 color='#065F46'><b>● Key Strengths & Growth Catalysts</b></font>", style_bold),
+        Paragraph(
+            "<font size=8.5 color='#065F46'><b>● Key Strengths & Growth Catalysts</b></font>",
+            style_bold,
+        ),
         Spacer(1, 3),
     ]
     for p in data["pros"][:4]:
-        pros_flowables.append(Paragraph(f"<font color='#059669'>✔</font> {p}", style_pro_bullet))
+        pros_flowables.append(
+            Paragraph(f"<font color='#059669'>✔</font> {p}", style_pro_bullet)
+        )
         pros_flowables.append(Spacer(1, 2))
 
     cons_flowables = [
-        Paragraph("<font size=8.5 color='#991B1B'><b>● Key Risks & Investment Watchpoints</b></font>", style_bold),
+        Paragraph(
+            "<font size=8.5 color='#991B1B'><b>● Key Risks & Investment Watchpoints</b></font>",
+            style_bold,
+        ),
         Spacer(1, 3),
     ]
     for c in data["cons"][:4]:
-        cons_flowables.append(Paragraph(f"<font color='#DC2626'>✖</font> {c}", style_con_bullet))
+        cons_flowables.append(
+            Paragraph(f"<font color='#DC2626'>✖</font> {c}", style_con_bullet)
+        )
         cons_flowables.append(Spacer(1, 2))
 
     pro_con_table = Table([[pros_flowables, cons_flowables]], colWidths=[col_w, col_w])
-    pro_con_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (0, 0), GREEN_BG),
-        ("BACKGROUND", (1, 0), (1, 0), RED_BG),
-        ("BOX", (0, 0), (0, 0), 1, colors.HexColor("#A7F3D0")),
-        ("BOX", (1, 0), (1, 0), 1, colors.HexColor("#FECACA")),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
+    pro_con_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (0, 0), GREEN_BG),
+                ("BACKGROUND", (1, 0), (1, 0), RED_BG),
+                ("BOX", (0, 0), (0, 0), 1, colors.HexColor("#A7F3D0")),
+                ("BOX", (1, 0), (1, 0), 1, colors.HexColor("#FECACA")),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        )
+    )
     story.append(pro_con_table)
 
     # Build Document with NumberedCanvas
     doc.build(story, canvasmaker=NumberedCanvas)
-    logger.info("Generated 2-page tearsheet for %s -> %s", data["ticker"], output_pdf_path)
+    logger.info(
+        "Generated 2-page tearsheet for %s -> %s", data["ticker"], output_pdf_path
+    )
     return output_pdf_path
 
 
@@ -825,7 +1157,10 @@ def build_tearsheet_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
 # Public API & CLI
 # ===========================================================================
 
-def generate_tearsheet(ticker: str, output_dir: Path = DEFAULT_OUTPUT_DIR, db_path: Path = DEFAULT_DB_PATH) -> Path:
+
+def generate_tearsheet(
+    ticker: str, output_dir: Path = DEFAULT_OUTPUT_DIR, db_path: Path = DEFAULT_DB_PATH
+) -> Path:
     """Generate a single company tearsheet PDF."""
     output_dir.mkdir(parents=True, exist_ok=True)
     clean_ticker = ticker.strip().upper()
@@ -837,7 +1172,9 @@ def generate_tearsheet(ticker: str, output_dir: Path = DEFAULT_OUTPUT_DIR, db_pa
 SKIPPED_CSV = PROJECT_ROOT / "output" / "skipped_tearsheets.csv"
 
 
-def _count_data_years(conn: sqlite3.Connection, company_id: str) -> tuple[int, int, int]:
+def _count_data_years(
+    conn: sqlite3.Connection, company_id: str
+) -> tuple[int, int, int]:
     """Return (income_statement_years, balance_sheet_years, cash_flow_years) for company."""
     is_yrs = conn.execute(
         "SELECT COUNT(DISTINCT year) FROM income_statement WHERE company_id = ?",
@@ -869,7 +1206,9 @@ def generate_all_tearsheets(
     """
     conn = sqlite3.connect(str(db_path))
     if not tickers:
-        rows = conn.execute("SELECT company_id, company_name FROM companies ORDER BY company_id").fetchall()
+        rows = conn.execute(
+            "SELECT company_id, company_name FROM companies ORDER BY company_id"
+        ).fetchall()
     else:
         rows = []
         for t in tickers:
@@ -896,42 +1235,52 @@ def generate_all_tearsheets(
                 f"(minimum required: {min_years}yr)"
             )
             logger.warning("SKIP %-12s - %s", company_id, reason)
-            skipped.append({
-                "company_id": company_id,
-                "company_name": company_name,
-                "data_years": data_years,
-                "reason": reason,
-            })
+            skipped.append(
+                {
+                    "company_id": company_id,
+                    "company_name": company_name,
+                    "data_years": data_years,
+                    "reason": reason,
+                }
+            )
             continue
 
         try:
-            pdf_path = generate_tearsheet(company_id, output_dir=output_dir, db_path=db_path)
+            pdf_path = generate_tearsheet(
+                company_id, output_dir=output_dir, db_path=db_path
+            )
             generated.append(pdf_path)
             logger.info("Generated: %s", pdf_path.name)
         except Exception as exc:
             logger.error("Failed generating tearsheet for %s: %s", company_id, exc)
-            skipped.append({
-                "company_id": company_id,
-                "company_name": company_name,
-                "data_years": data_years,
-                "reason": str(exc),
-            })
+            skipped.append(
+                {
+                    "company_id": company_id,
+                    "company_name": company_name,
+                    "data_years": data_years,
+                    "reason": str(exc),
+                }
+            )
 
     conn.close()
 
     # Write skipped log
     skipped_csv.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(skipped, columns=["company_id", "company_name", "data_years", "reason"]).to_csv(
-        skipped_csv, index=False
-    )
+    pd.DataFrame(
+        skipped, columns=["company_id", "company_name", "data_years", "reason"]
+    ).to_csv(skipped_csv, index=False)
     if skipped:
-        logger.info("Skipped log written to: %s  (%d companies)", skipped_csv, len(skipped))
+        logger.info(
+            "Skipped log written to: %s  (%d companies)", skipped_csv, len(skipped)
+        )
 
     return generated, skipped
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate 2-Page Company Financial Tearsheets using ReportLab.")
+    parser = argparse.ArgumentParser(
+        description="Generate 2-Page Company Financial Tearsheets using ReportLab."
+    )
     parser.add_argument(
         "--tickers",
         nargs="+",
@@ -959,7 +1308,9 @@ def main():
     print("=" * 70)
     print(f"[INFO] Output Directory: {out_dir}")
 
-    results, skipped = generate_all_tearsheets(tickers=tickers_to_run, output_dir=out_dir)
+    results, skipped = generate_all_tearsheets(
+        tickers=tickers_to_run, output_dir=out_dir
+    )
 
     print(f"\n[SUMMARY] Successfully generated {len(results)} tearsheets in {out_dir}")
     for p in results[:10]:
@@ -973,7 +1324,9 @@ def main():
             print(f"  [SKIP] {s['company_id']:12s} -- {s['reason']}")
         print(f"  [LOG]  Written to: {SKIPPED_CSV}")
 
-    print(f"\n[TOTAL] Generated={len(results)}, Skipped={len(skipped)}, Total={len(results) + len(skipped)}")
+    print(
+        f"\n[TOTAL] Generated={len(results)}, Skipped={len(skipped)}, Total={len(results) + len(skipped)}"
+    )
 
 
 if __name__ == "__main__":

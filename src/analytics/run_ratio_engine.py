@@ -16,17 +16,14 @@ Usage:
 
 from __future__ import annotations
 
-import csv
 import logging
 import sqlite3
 import sys
 from collections import defaultdict
-from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from src.analytics.cagr import compute_all_cagrs
 from src.analytics.cashflow_kpis import (
-    ALLOCATION_CSV_COLUMNS,
     capex_intensity,
     classify_capital_allocation,
     cfo_quality_score,
@@ -61,41 +58,41 @@ DB_PATH = "db/nifty100.db"
 # Column mapping: internal key → actual column name in your DB.
 # Only change the VALUES if your columns are named differently.
 IS = {  # income_statement columns
-    "company_id":      "company_id",
-    "year":            "year",
-    "revenue":         "revenue",
-    "net_income":      "net_income",
-    "opm":             "opm",
-    "eps":             "eps",
-    "dps":             "dps",
+    "company_id": "company_id",
+    "year": "year",
+    "revenue": "revenue",
+    "net_income": "net_income",
+    "opm": "opm",
+    "eps": "eps",
+    "dps": "dps",
     "operating_profit": "operating_profit",
-    "other_income":    "other_income",
-    "interest":        "interest",
-    "tax":             "tax",
+    "other_income": "other_income",
+    "interest": "interest",
+    "tax": "tax",
 }
 
 BS = {  # balance_sheet columns
-    "company_id":      "company_id",
-    "year":            "year",
-    "equity_capital":  "equity_capital",
-    "reserves":        "reserves_and_surplus",
-    "borrowings":      "borrowings",
-    "total_assets":    "total_assets",
+    "company_id": "company_id",
+    "year": "year",
+    "equity_capital": "equity_capital",
+    "reserves": "reserves_and_surplus",
+    "borrowings": "borrowings",
+    "total_assets": "total_assets",
     "total_liabilities": "total_liabilities",
-    "investments":     "investments",
+    "investments": "investments",
 }
 
 CF = {  # cash_flow columns
-    "company_id":      "company_id",
-    "year":            "year",
-    "operating_cf":    "operating_activities",
-    "investing_cf":    "investing_activities",
-    "financing_cf":    "financing_activities",
+    "company_id": "company_id",
+    "year": "year",
+    "operating_cf": "operating_activities",
+    "investing_cf": "investing_activities",
+    "financing_cf": "financing_activities",
 }
 
 CO = {  # companies columns
-    "company_id":      "company_id",
-    "broad_sector":    "broad_sector",
+    "company_id": "company_id",
+    "broad_sector": "broad_sector",
 }
 
 # ======================================================================
@@ -164,6 +161,7 @@ CREATE TABLE IF NOT EXISTS financial_ratios (
 # Helpers
 # ======================================================================
 
+
 def _get_existing_columns(conn: sqlite3.Connection, table: str) -> set[str]:
     """Return set of column names that actually exist in *table*."""
     try:
@@ -188,6 +186,7 @@ def _safe_float(row: dict, mapping: dict, key: str) -> Optional[float]:
 # ======================================================================
 # Data fetching
 # ======================================================================
+
 
 def _build_base_query(conn: sqlite3.Connection) -> str:
     """Build the big LEFT JOIN query using only columns that exist."""
@@ -268,29 +267,30 @@ def fetch_all_data(conn: sqlite3.Connection) -> list[dict]:
 # Per-company-year KPI computation
 # ======================================================================
 
+
 def compute_kpis(row: dict) -> dict:
     """Compute all KPIs for one company-year row dict."""
     # Extract values using mapping
-    revenue     = _safe_float(row, IS, "revenue")
-    net_income  = _safe_float(row, IS, "net_income")
-    opm_source  = _safe_float(row, IS, "opm")
-    eps         = _safe_float(row, IS, "eps")
-    dps         = _safe_float(row, IS, "dps")
-    op_profit   = _safe_float(row, IS, "operating_profit")
-    other_inc   = _safe_float(row, IS, "other_income")
-    interest    = _safe_float(row, IS, "interest")
+    revenue = _safe_float(row, IS, "revenue")
+    net_income = _safe_float(row, IS, "net_income")
+    opm_source = _safe_float(row, IS, "opm")
+    eps = _safe_float(row, IS, "eps")
+    dps = _safe_float(row, IS, "dps")
+    op_profit = _safe_float(row, IS, "operating_profit")
+    other_inc = _safe_float(row, IS, "other_income")
+    interest = _safe_float(row, IS, "interest")
 
-    eq_cap      = _safe_float(row, BS, "equity_capital")
-    reserves    = _safe_float(row, BS, "reserves")
-    borrowings  = _safe_float(row, BS, "borrowings")
-    total_ast   = _safe_float(row, BS, "total_assets")
+    eq_cap = _safe_float(row, BS, "equity_capital")
+    reserves = _safe_float(row, BS, "reserves")
+    borrowings = _safe_float(row, BS, "borrowings")
+    total_ast = _safe_float(row, BS, "total_assets")
     investments = _safe_float(row, BS, "investments")
 
-    ocf         = _safe_float(row, CF, "operating_cf")
-    icf         = _safe_float(row, CF, "investing_cf")
-    fcf_val     = _safe_float(row, CF, "financing_cf")
+    ocf = _safe_float(row, CF, "operating_cf")
+    icf = _safe_float(row, CF, "investing_cf")
+    fcf_val = _safe_float(row, CF, "financing_cf")
 
-    broad_sec   = row.get(CO.get("broad_sector", "broad_sector"))
+    broad_sec = row.get(CO.get("broad_sector", "broad_sector"))
 
     # Derive operating_profit if column missing (revenue × opm / 100)
     if op_profit is None and revenue is not None and opm_source is not None:
@@ -307,9 +307,7 @@ def compute_kpis(row: dict) -> dict:
     npm = net_profit_margin(net_income, revenue)
     computed_opm = operating_profit_margin(op_profit, revenue, opm_source)
     roe = return_on_equity(net_income, eq_cap, reserves)
-    roce = return_on_capital_employed(
-        ebit, eq_cap, reserves, borrowings, broad_sec
-    )
+    roce = return_on_capital_employed(ebit, eq_cap, reserves, borrowings, broad_sec)
     roa = return_on_assets(net_income, total_ast)
 
     # --- Leverage & Efficiency ---
@@ -338,11 +336,7 @@ def compute_kpis(row: dict) -> dict:
     # --- Composite quality score ---
     # Simple average of available profitability ratios (NPM, ROE, ROA)
     prof_ratios = [v for v in [npm, roe, roa] if v is not None]
-    comp_score = (
-        round(sum(prof_ratios) / len(prof_ratios), 2)
-        if prof_ratios
-        else None
-    )
+    comp_score = round(sum(prof_ratios) / len(prof_ratios), 2) if prof_ratios else None
 
     return dict(
         company_id=row.get(IS["company_id"], row.get("company_id")),
@@ -386,6 +380,7 @@ def compute_kpis(row: dict) -> dict:
 # CAGR computation (needs multi-year data per company)
 # ======================================================================
 
+
 def compute_company_cagrs(
     company_rows: list[dict],
 ) -> dict[str, tuple[Optional[float], str]]:
@@ -393,18 +388,9 @@ def compute_company_cagrs(
     # Sort by year ascending
     sorted_rows = sorted(company_rows, key=lambda r: r.get("year", ""))
 
-    revenue_series = [
-        (r["year"], _safe_float(r, IS, "revenue"))
-        for r in sorted_rows
-    ]
-    pat_series = [
-        (r["year"], _safe_float(r, IS, "net_income"))
-        for r in sorted_rows
-    ]
-    eps_series = [
-        (r["year"], _safe_float(r, IS, "eps"))
-        for r in sorted_rows
-    ]
+    revenue_series = [(r["year"], _safe_float(r, IS, "revenue")) for r in sorted_rows]
+    pat_series = [(r["year"], _safe_float(r, IS, "net_income")) for r in sorted_rows]
+    eps_series = [(r["year"], _safe_float(r, IS, "eps")) for r in sorted_rows]
 
     return dict(
         revenue_cagrs=compute_all_cagrs(revenue_series),
@@ -416,6 +402,7 @@ def compute_company_cagrs(
 # ======================================================================
 # CFO Quality (needs multi-year data per company)
 # ======================================================================
+
 
 def compute_company_cfo_quality(
     company_rows: list[dict],
@@ -435,6 +422,7 @@ def compute_company_cfo_quality(
 # ======================================================================
 # Main orchestration
 # ======================================================================
+
 
 def run_ratio_engine(
     db_path: str = DB_PATH,
@@ -495,14 +483,16 @@ def run_ratio_engine(
             all_records.append(kpi)
 
             # Capital allocation CSV row
-            allocation_rows.append(dict(
-                company_id=kpi["company_id"],
-                year=kpi["year"],
-                cfo_sign=kpi["cfo_sign"],
-                cfi_sign=kpi["cfi_sign"],
-                cff_sign=kpi["cff_sign"],
-                pattern_label=kpi["pattern_label"],
-            ))
+            allocation_rows.append(
+                dict(
+                    company_id=kpi["company_id"],
+                    year=kpi["year"],
+                    cfo_sign=kpi["cfo_sign"],
+                    cfi_sign=kpi["cfi_sign"],
+                    cff_sign=kpi["cff_sign"],
+                    pattern_label=kpi["pattern_label"],
+                )
+            )
 
         # 6. Insert into financial_ratios (upsert)
         insert_sql = """
@@ -559,17 +549,20 @@ def run_ratio_engine(
         generate_capital_allocation_csv(allocation_rows)
 
         # 8. Summary stats
-        count = conn.execute(
-            "SELECT COUNT(*) FROM financial_ratios"
-        ).fetchone()[0]
+        count = conn.execute("SELECT COUNT(*) FROM financial_ratios").fetchone()[0]
 
         # Count non-null per KPI column
         kpi_columns = [
-            "net_profit_margin_pct", "operating_profit_margin_pct",
-            "return_on_equity_pct", "debt_to_equity",
-            "interest_coverage", "asset_turnover",
-            "free_cash_flow", "revenue_cagr_5yr",
-            "pat_cagr_5yr", "eps_cagr_5yr",
+            "net_profit_margin_pct",
+            "operating_profit_margin_pct",
+            "return_on_equity_pct",
+            "debt_to_equity",
+            "interest_coverage",
+            "asset_turnover",
+            "free_cash_flow",
+            "revenue_cagr_5yr",
+            "pat_cagr_5yr",
+            "eps_cagr_5yr",
         ]
         non_null_counts = {}
         for col in kpi_columns:

@@ -16,10 +16,10 @@ from src.analytics.peer import (
     load_peer_percentiles,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared pipeline fixture — 6 companies, 3 sectors, 13 columns
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def pipeline_df() -> pd.DataFrame:
@@ -27,12 +27,20 @@ def pipeline_df() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "company_name": [
-                "TCS", "Infosys", "HDFC Bank",
-                "KotakBank", "ITC", "HUL",
+                "TCS",
+                "Infosys",
+                "HDFC Bank",
+                "KotakBank",
+                "ITC",
+                "HUL",
             ],
             "broad_sector": [
-                "IT", "IT", "Financial Services",
-                "Financial Services", "FMCG", "FMCG",
+                "IT",
+                "IT",
+                "Financial Services",
+                "Financial Services",
+                "FMCG",
+                "FMCG",
             ],
             "year": [2024] * 6,
             "roe": [45.0, 38.0, 16.0, 14.0, 26.0, 30.0],
@@ -51,15 +59,17 @@ def pipeline_df() -> pd.DataFrame:
 
 def _make_peer_df(pipeline_df: pd.DataFrame) -> pd.DataFrame:
     """Rename pipeline_df columns to match PEER_METRICS names."""
-    peer_df = pipeline_df.rename(columns={
-        "roe": "ROE",
-        "roce": "ROCE",
-        "net_profit_margin": "NPM",
-        "debt_to_equity": "D/E",
-        "interest_coverage_ratio": "ICR",
-        "revenue_cagr_5yr": "Revenue CAGR 5Y",
-        "pat_cagr_5yr": "PAT CAGR 5Y",
-    })
+    peer_df = pipeline_df.rename(
+        columns={
+            "roe": "ROE",
+            "roce": "ROCE",
+            "net_profit_margin": "NPM",
+            "debt_to_equity": "D/E",
+            "interest_coverage_ratio": "ICR",
+            "revenue_cagr_5yr": "Revenue CAGR 5Y",
+            "pat_cagr_5yr": "PAT CAGR 5Y",
+        }
+    )
     peer_df["OPM"] = pipeline_df["net_profit_margin"] * 0.8
     peer_df["CFO Quality"] = pipeline_df["cfo_quality_score"]
     peer_df["OCF Ratio"] = pipeline_df["fcf_conversion_rate"]
@@ -69,6 +79,7 @@ def _make_peer_df(pipeline_df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # FilterEngine spot-checks
 # ---------------------------------------------------------------------------
+
 
 class TestFilterEngineSpotCheck:
     """Spot-check FilterEngine with real config."""
@@ -91,6 +102,7 @@ class TestFilterEngineSpotCheck:
 # Scoring spot-checks
 # ---------------------------------------------------------------------------
 
+
 class TestScoringSpotCheck:
     """Spot-check compute_all_scores / compute_composite_score."""
 
@@ -102,8 +114,11 @@ class TestScoringSpotCheck:
     def test_all_scores_has_five_columns(self, pipeline_df):
         scores = compute_all_scores(pipeline_df, sector_col="broad_sector")
         expected = {
-            "composite_score", "profitability_score",
-            "cash_quality_score", "growth_score", "leverage_score",
+            "composite_score",
+            "profitability_score",
+            "cash_quality_score",
+            "growth_score",
+            "leverage_score",
         }
         assert expected.issubset(set(scores.columns))
 
@@ -118,6 +133,7 @@ class TestScoringSpotCheck:
 # Peer spot-checks
 # ---------------------------------------------------------------------------
 
+
 class TestPeerSpotCheck:
     """Spot-check peer percentile computation."""
 
@@ -129,9 +145,7 @@ class TestPeerSpotCheck:
         pct = compute_peer_percentiles(peer_df)
         save_peer_percentiles(pct, conn)
 
-        rows = conn.execute(
-            "SELECT COUNT(*) FROM peer_percentiles"
-        ).fetchone()[0]
+        rows = conn.execute("SELECT COUNT(*) FROM peer_percentiles").fetchone()[0]
         assert rows > 0
         conn.close()
 
@@ -151,11 +165,13 @@ class TestPeerSpotCheck:
 # Data Quality spot-check
 # ---------------------------------------------------------------------------
 
+
 class TestDataQualitySpotCheck:
     """Spot-check DQ rules pass on a clean pipeline DataFrame."""
 
     def test_pipeline_df_passes_dq(self, pipeline_df):
         from src.analytics.data_quality import run_dq_checks
+
         # pipeline_df is clean — should have zero violations
         result = run_dq_checks(pipeline_df, sector_col="broad_sector")
         total = sum(len(v) for v in result.values())
@@ -165,6 +181,7 @@ class TestDataQualitySpotCheck:
 # ---------------------------------------------------------------------------
 # End-to-end pipeline spot-check
 # ---------------------------------------------------------------------------
+
 
 class TestEndToEndPipeline:
     """Filter → Score → Peer: cross-module consistency."""

@@ -19,7 +19,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.analytics.ratios import (
+from src.analytics.ratios import (  # noqa: E402
     asset_turnover,
     interest_coverage_ratio,
     is_high_leverage,
@@ -31,14 +31,12 @@ from src.analytics.ratios import (
     return_on_capital_employed,
     return_on_equity,
 )
-from src.analytics.cagr import compute_all_cagrs
-from src.analytics.cashflow_kpis import (
+from src.analytics.cagr import compute_all_cagrs  # noqa: E402
+from src.analytics.cashflow_kpis import (  # noqa: E402
     capex_intensity,
     free_cash_flow,
     capital_allocation_pattern,
-    classify_capital_allocation,
     fcf_conversion_rate,
-    cfo_quality_score,
 )
 
 # ---------------------------------------------------------------------------
@@ -179,9 +177,18 @@ def _normalize_year(year_val) -> str:
 
     # "Mar-23" or "Mar-2023"
     month_map = {
-        "jan": "01", "feb": "02", "mar": "03", "apr": "04",
-        "may": "05", "jun": "06", "jul": "07", "aug": "08",
-        "sep": "09", "oct": "10", "nov": "11", "dec": "12",
+        "jan": "01",
+        "feb": "02",
+        "mar": "03",
+        "apr": "04",
+        "may": "05",
+        "jun": "06",
+        "jul": "07",
+        "aug": "08",
+        "sep": "09",
+        "oct": "10",
+        "nov": "11",
+        "dec": "12",
     }
     parts = s.replace("-", " ").replace("/", " ").split()
     for p in parts:
@@ -229,7 +236,9 @@ def load_companies(conn: sqlite3.Connection) -> int:
 
     # Normalize
     df["id"] = df["id"].astype(str).str.strip().str.upper()
-    df["company_name"] = df["company_name"].astype(str).str.replace("\n", " ").str.strip()
+    df["company_name"] = (
+        df["company_name"].astype(str).str.replace("\n", " ").str.strip()
+    )
 
     count = 0
     for _, row in df.iterrows():
@@ -237,7 +246,11 @@ def load_companies(conn: sqlite3.Connection) -> int:
             conn.execute(
                 """INSERT OR REPLACE INTO companies (id, company_name, face_value)
                    VALUES (?, ?, ?)""",
-                (row["id"], row["company_name"], _safe_float(row.get("face_value", 1)) or 1),
+                (
+                    row["id"],
+                    row["company_name"],
+                    _safe_float(row.get("face_value", 1)) or 1,
+                ),
             )
             count += 1
         except Exception as e:
@@ -261,9 +274,18 @@ def load_income_statements(conn: sqlite3.Connection) -> int:
     df["year"] = df["year"].apply(_normalize_year)
 
     numeric_cols = [
-        "sales", "expenses", "operating_profit", "opm_percentage",
-        "other_income", "interest", "depreciation", "profit_before_tax",
-        "tax_percentage", "net_profit", "eps", "dividend_payout",
+        "sales",
+        "expenses",
+        "operating_profit",
+        "opm_percentage",
+        "other_income",
+        "interest",
+        "depreciation",
+        "profit_before_tax",
+        "tax_percentage",
+        "net_profit",
+        "eps",
+        "dividend_payout",
     ]
 
     count = 0
@@ -305,9 +327,16 @@ def load_balance_sheets(conn: sqlite3.Connection) -> int:
     df["year"] = df["year"].apply(_normalize_year)
 
     numeric_cols = [
-        "equity_capital", "reserves", "borrowings", "other_liabilities",
-        "total_liabilities", "fixed_assets", "cwip", "investments",
-        "other_asset", "total_assets",
+        "equity_capital",
+        "reserves",
+        "borrowings",
+        "other_liabilities",
+        "total_liabilities",
+        "fixed_assets",
+        "cwip",
+        "investments",
+        "other_asset",
+        "total_assets",
     ]
 
     count = 0
@@ -348,8 +377,10 @@ def load_cash_flows(conn: sqlite3.Connection) -> int:
     df["year"] = df["year"].apply(_normalize_year)
 
     numeric_cols = [
-        "operating_activity", "investing_activity",
-        "financing_activity", "net_cash_flow",
+        "operating_activity",
+        "investing_activity",
+        "financing_activity",
+        "net_cash_flow",
     ]
 
     count = 0
@@ -393,6 +424,7 @@ def _unwrap(val):
     """Extract first element if function returned a tuple."""
     return val[0] if isinstance(val, tuple) else val
 
+
 def compute_row(
     is_row: dict[str, Optional[float]],
     bs_row: dict[str, Optional[float]],
@@ -417,7 +449,11 @@ def compute_row(
     face_value = bs_row.get("face_value") or 1  # fetch from companies later
 
     total_equity = equity_capital + reserves
-    ebit = (operating_profit or 0) - (depreciation or 0) if operating_profit and depreciation else None
+    ebit = (
+        (operating_profit or 0) - (depreciation or 0)
+        if operating_profit and depreciation
+        else None
+    )
 
     cfo = cf_row.get("operating_activity")
     cfi = cf_row.get("investing_activity")
@@ -441,15 +477,23 @@ def compute_row(
     # --- Cash flow KPIs ---
     fcf = free_cash_flow(cfo, cfi)
     capex_int = _unwrap(capex_intensity(cfi, cfo))
-    fcf_conv = _unwrap(fcf_conversion_rate(fcf, operating_profit))    # Single-year CFO quality: CFO / PAT ratio (the function expects lists, not scalars)
+    fcf_conv = _unwrap(
+        fcf_conversion_rate(fcf, operating_profit)
+    )  # Single-year CFO quality: CFO / PAT ratio (the function expects lists, not scalars)
     cfo_qs = None
     if cfo is not None and net_profit is not None and net_profit > 0:
         cfo_qs = round((cfo / net_profit) * 100, 2)
     cap_alloc = _unwrap(capital_allocation_pattern(cfo, cfi, cff))
 
     # --- Book value per share ---
-    shares_outstanding = (equity_capital / face_value) if face_value and face_value > 0 else None
-    bvps = (total_equity / shares_outstanding) if shares_outstanding and shares_outstanding > 0 else None
+    shares_outstanding = (
+        (equity_capital / face_value) if face_value and face_value > 0 else None
+    )
+    bvps = (
+        (total_equity / shares_outstanding)
+        if shares_outstanding and shares_outstanding > 0
+        else None
+    )
 
     return {
         "company_id": company_id,
@@ -498,9 +542,7 @@ def _cagr_column(is_rows: list[dict], metric: str) -> list[tuple[str, Optional[f
     return [(r.get("year", ""), _safe_float(r.get(metric))) for r in sorted_rows]
 
 
-def enrich_with_cagrs(
-    rows: list[dict], all_is_for_company: list[dict]
-) -> None:
+def enrich_with_cagrs(rows: list[dict], all_is_for_company: list[dict]) -> None:
     """Add CAGR columns to rows in-place using the company's full IS history."""
     revenue_series = _cagr_column(all_is_for_company, "sales")
     pat_series = _cagr_column(all_is_for_company, "net_profit")
@@ -513,7 +555,7 @@ def enrich_with_cagrs(
 
     # Map year → CAGR values
     for row in rows:
-        yr = row["year"]
+        row["year"]
         row["revenue_cagr_3yr"] = _unwrap(rev_cagrs.get("cagr_3yr"))
         row["revenue_cagr_5yr"] = _unwrap(rev_cagrs.get("cagr_5yr"))
         row["revenue_cagr_10yr"] = _unwrap(rev_cagrs.get("cagr_10yr"))
@@ -597,7 +639,10 @@ def run() -> dict:
     # Step 2: Load Excel data (skip if tables already have data)
     existing = _fetch_dict(conn, "SELECT COUNT(*) as cnt FROM income_statement")
     if existing and existing[0]["cnt"] > 0:
-        log.info("Source tables already populated (%d IS rows). Skipping Excel load.", existing[0]["cnt"])
+        log.info(
+            "Source tables already populated (%d IS rows). Skipping Excel load.",
+            existing[0]["cnt"],
+        )
     else:
         log.info("Source tables empty. Loading from Excel...")
         counts = load_all_data(conn)
@@ -614,7 +659,9 @@ def run() -> dict:
     fv_lookup = {c["id"]: (c["face_value"] or 1) for c in companies}
 
     # Step 3: Get all income_statement years per company
-    all_is = _fetch_dict(conn, "SELECT * FROM income_statement ORDER BY company_id, year")
+    all_is = _fetch_dict(
+        conn, "SELECT * FROM income_statement ORDER BY company_id, year"
+    )
     all_bs = _fetch_dict(conn, "SELECT * FROM balance_sheet ORDER BY company_id, year")
     all_cf = _fetch_dict(conn, "SELECT * FROM cash_flow ORDER BY company_id, year")
 
@@ -624,6 +671,7 @@ def run() -> dict:
 
     # Group IS rows by company
     from collections import defaultdict
+
     is_by_company = defaultdict(list)
     for r in all_is:
         is_by_company[r["company_id"]].append(r)
@@ -654,19 +702,38 @@ def run() -> dict:
 
     # Step 7: Write to financial_ratios table (UPSERT)
     cols = [
-        "company_id", "year",
-        "net_profit_margin_pct", "operating_profit_margin_pct",
-        "return_on_equity_pct", "return_on_capital_employed_pct",
-        "return_on_assets_pct", "debt_to_equity", "interest_coverage",
-        "is_high_leverage", "is_low_icr_warning", "net_debt_cr",
-        "asset_turnover", "free_cash_flow_cr", "capex_intensity",
-        "fcf_conversion_rate", "cfo_quality_score",
-        "capital_allocation_pattern", "earnings_per_share",
-        "book_value_per_share", "dividend_payout_ratio_pct",
-        "total_debt_cr", "cash_from_operations_cr",
-        "revenue_cagr_3yr", "revenue_cagr_5yr", "revenue_cagr_10yr",
-        "pat_cagr_3yr", "pat_cagr_5yr", "pat_cagr_10yr",
-        "eps_cagr_3yr", "eps_cagr_5yr", "eps_cagr_10yr",
+        "company_id",
+        "year",
+        "net_profit_margin_pct",
+        "operating_profit_margin_pct",
+        "return_on_equity_pct",
+        "return_on_capital_employed_pct",
+        "return_on_assets_pct",
+        "debt_to_equity",
+        "interest_coverage",
+        "is_high_leverage",
+        "is_low_icr_warning",
+        "net_debt_cr",
+        "asset_turnover",
+        "free_cash_flow_cr",
+        "capex_intensity",
+        "fcf_conversion_rate",
+        "cfo_quality_score",
+        "capital_allocation_pattern",
+        "earnings_per_share",
+        "book_value_per_share",
+        "dividend_payout_ratio_pct",
+        "total_debt_cr",
+        "cash_from_operations_cr",
+        "revenue_cagr_3yr",
+        "revenue_cagr_5yr",
+        "revenue_cagr_10yr",
+        "pat_cagr_3yr",
+        "pat_cagr_5yr",
+        "pat_cagr_10yr",
+        "eps_cagr_3yr",
+        "eps_cagr_5yr",
+        "eps_cagr_10yr",
         "composite_quality_score",
     ]
     placeholders = ", ".join(["?"] * len(cols))
@@ -701,7 +768,9 @@ def run() -> dict:
     years_count = _fetch_dict(
         conn, "SELECT COUNT(DISTINCT year) as cnt FROM financial_ratios"
     )
-    null_stats = _fetch_dict(conn, """
+    null_stats = _fetch_dict(
+        conn,
+        """
         SELECT
             COUNT(*) as total,
             SUM(CASE WHEN net_profit_margin_pct IS NULL THEN 1 ELSE 0 END) as npm_nulls,
@@ -709,7 +778,8 @@ def run() -> dict:
             SUM(CASE WHEN debt_to_equity IS NULL THEN 1 ELSE 0 END) as de_nulls,
             SUM(CASE WHEN composite_quality_score IS NULL THEN 1 ELSE 0 END) as qs_nulls
         FROM financial_ratios
-    """)
+    """,
+    )
 
     summary = {
         "total_rows": total[0]["cnt"] if total else 0,
@@ -752,18 +822,20 @@ def spot_check(conn: sqlite3.Connection, company_ids: list[str]) -> None:
         print(f"  SPOT CHECK: {cid}")
         print(f"{'='*60}")
         for r in rows:
-            print(f"  {r['year']}  NPM={r['net_profit_margin_pct']:.1f}%  "
-                  f"ROE={r['return_on_equity_pct']:.1f}%  "
-                  f"D/E={r['debt_to_equity']:.2f}  "
-                  f"ICR={r['interest_coverage']}  "
-                  f"FCF={r['free_cash_flow_cr']}  "
-                  f"Score={r['composite_quality_score']}")
+            print(
+                f"  {r['year']}  NPM={r['net_profit_margin_pct']:.1f}%  "
+                f"ROE={r['return_on_equity_pct']:.1f}%  "
+                f"D/E={r['debt_to_equity']:.2f}  "
+                f"ICR={r['interest_coverage']}  "
+                f"FCF={r['free_cash_flow_cr']}  "
+                f"Score={r['composite_quality_score']}"
+            )
 
 
 if __name__ == "__main__":
     result = run()
     print(f"\n{'='*60}")
-    print(f"  RATIO RUNNER COMPLETE")
+    print("  RATIO RUNNER COMPLETE")
     print(f"{'='*60}")
     print(f"  Rows written   : {result.get('written', 0)}")
     print(f"  Total in DB    : {result.get('total_rows', 0)}")
@@ -776,7 +848,7 @@ if __name__ == "__main__":
     elif result.get("total_rows", 0) < 1100:
         print(f"\n  ⚠ WARNING: {result['total_rows']} rows < 1100 target!")
     else:
-        print(f"\n  ✓ Target of 1,100+ rows MET!")
+        print("\n  ✓ Target of 1,100+ rows MET!")
 
     # Spot-check 3 companies
     conn = sqlite3.connect(str(DB_PATH))

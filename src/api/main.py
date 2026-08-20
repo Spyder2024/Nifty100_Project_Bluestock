@@ -33,7 +33,6 @@ from typing import AsyncGenerator, Generator
 
 from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from src.api.routers.companies import router as companies_router
 from src.api.routers.documents import router as documents_router
@@ -168,4 +167,5 @@ async def root() -> dict[str, str]:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("src.api.main:app", host="0.0.0.0", port=8000, reload=True)

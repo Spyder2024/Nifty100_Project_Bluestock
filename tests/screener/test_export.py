@@ -9,11 +9,10 @@ from src.screener.export import (
     export_to_excel,
     _score_fill,
     SCORE_COLUMNS,
-    SUMMARY_COLUMNS,
 )
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def sample_df():
@@ -22,22 +21,23 @@ def sample_df():
         {
             "company_name": ["TCS", "INFY", "HDFCBANK", "SBIN"],
             "sector": ["IT", "IT", "Financial Services", "Financial Services"],
-            "return_on_equity":          [15.0, 12.0, 14.0, 10.0],
-            "return_on_capital_employed": [20.0, 16.0,  0.0,  0.0],
-            "net_profit_margin":         [18.0, 15.0, 20.0, 12.0],
-            "operating_profit_margin":   [22.0, 19.0, 25.0, 16.0],
-            "cfo_quality_score":         [0.85, 0.80, 0.70, 0.55],
-            "operating_cash_flow_ratio": [1.2,  1.0,  0.0,  0.0],
-            "debt_to_equity":            [0.1,  0.3,  5.8,  4.2],
-            "interest_coverage_ratio":   [25.0, 20.0, 2.5,  1.8],
-            "revenue_cagr_5yr":          [8.0,  7.0, 10.0,  8.0],
-            "net_profit_cagr_5yr":       [10.0,  8.0, 12.0,  9.0],
-            "ebitda_cagr_5yr":           [9.0,  7.5, 11.0,  8.5],
+            "return_on_equity": [15.0, 12.0, 14.0, 10.0],
+            "return_on_capital_employed": [20.0, 16.0, 0.0, 0.0],
+            "net_profit_margin": [18.0, 15.0, 20.0, 12.0],
+            "operating_profit_margin": [22.0, 19.0, 25.0, 16.0],
+            "cfo_quality_score": [0.85, 0.80, 0.70, 0.55],
+            "operating_cash_flow_ratio": [1.2, 1.0, 0.0, 0.0],
+            "debt_to_equity": [0.1, 0.3, 5.8, 4.2],
+            "interest_coverage_ratio": [25.0, 20.0, 2.5, 1.8],
+            "revenue_cagr_5yr": [8.0, 7.0, 10.0, 8.0],
+            "net_profit_cagr_5yr": [10.0, 8.0, 12.0, 9.0],
+            "ebitda_cagr_5yr": [9.0, 7.5, 11.0, 8.5],
         }
     )
 
 
 # ── Score-fill helper ────────────────────────────────────────────────────────
+
 
 class TestScoreFill:
     def test_high_score_solid_fill(self):
@@ -71,6 +71,7 @@ class TestScoreFill:
 
 # ── File-level export tests ──────────────────────────────────────────────────
 
+
 class TestExportToFile:
     def test_creates_file(self, sample_df, tmp_path):
         out = tmp_path / "test.xlsx"
@@ -81,30 +82,35 @@ class TestExportToFile:
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out))
         from openpyxl import load_workbook
+
         assert "Summary" in load_workbook(str(out)).sheetnames
 
     def test_has_by_sector_sheet(self, sample_df, tmp_path):
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out))
         from openpyxl import load_workbook
+
         assert "By Sector" in load_workbook(str(out)).sheetnames
 
     def test_has_score_details_by_default(self, sample_df, tmp_path):
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out))
         from openpyxl import load_workbook
+
         assert "Score Details" in load_workbook(str(out)).sheetnames
 
     def test_no_details_when_disabled(self, sample_df, tmp_path):
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out), include_details=False)
         from openpyxl import load_workbook
+
         assert "Score Details" not in load_workbook(str(out)).sheetnames
 
     def test_summary_sorted_by_composite_desc(self, sample_df, tmp_path):
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out))
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Summary"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         ci = headers.index("composite_score") + 1
@@ -115,6 +121,7 @@ class TestExportToFile:
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out))
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Summary"]
         headers = {ws.cell(1, c).value for c in range(1, ws.max_column + 1)}
         for col in SCORE_COLUMNS:
@@ -124,6 +131,7 @@ class TestExportToFile:
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out))
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Summary"]
         cell = ws.cell(1, 1)
         assert cell.font.bold is True
@@ -133,6 +141,7 @@ class TestExportToFile:
         out = tmp_path / "test.xlsx"
         export_to_excel(sample_df, str(out))
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Summary"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         ci = headers.index("composite_score") + 1
@@ -142,13 +151,12 @@ class TestExportToFile:
 
 # ── Edge cases ───────────────────────────────────────────────────────────────
 
+
 class TestExportEdgeCases:
     def test_empty_df_raises_value_error(self, tmp_path):
         out = tmp_path / "empty.xlsx"
         with pytest.raises(ValueError, match="empty"):
-            export_to_excel(
-                pd.DataFrame({"company_name": [], "sector": []}), str(out)
-            )
+            export_to_excel(pd.DataFrame({"company_name": [], "sector": []}), str(out))
 
     def test_creates_parent_directories(self, sample_df, tmp_path):
         nested = tmp_path / "a" / "b" / "out.xlsx"
@@ -160,6 +168,7 @@ class TestExportEdgeCases:
         pre = compute_all_scores(sample_df)
         export_to_excel(sample_df, str(out), composite_scores=pre)
         from openpyxl import load_workbook
+
         assert "Summary" in load_workbook(str(out)).sheetnames
 
     def test_return_path_matches(self, sample_df, tmp_path):

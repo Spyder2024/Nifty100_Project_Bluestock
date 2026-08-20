@@ -1,43 +1,84 @@
 """Tests for peer comparison Excel export (Day 20)."""
 
 import sqlite3
-from pathlib import Path
 
-import pandas as pd
 import pytest
 
 from src.analytics.peer import (
-    PEER_METRICS,
     create_peer_table,
-    save_peer_percentiles,
 )
 from src.analytics.peer_export import (
     export_peer_comparison_excel,
     _pct_fill,
 )
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def _seed_peer_data(conn, year=2024):
     """Populate peer_percentiles with 3 peer groups × 2-3 companies."""
     data = []
     companies = {
         "IT": [
-            ("TCS",  {"return_on_equity": 83.3, "net_profit_margin": 83.3, "debt_to_equity": 83.3, "interest_coverage_ratio": 83.3}),
-            ("INFY", {"return_on_equity": 50.0, "net_profit_margin": 50.0, "debt_to_equity": 50.0, "interest_coverage_ratio": 50.0}),
+            (
+                "TCS",
+                {
+                    "return_on_equity": 83.3,
+                    "net_profit_margin": 83.3,
+                    "debt_to_equity": 83.3,
+                    "interest_coverage_ratio": 83.3,
+                },
+            ),
+            (
+                "INFY",
+                {
+                    "return_on_equity": 50.0,
+                    "net_profit_margin": 50.0,
+                    "debt_to_equity": 50.0,
+                    "interest_coverage_ratio": 50.0,
+                },
+            ),
         ],
         "Financial Services": [
-            ("HDFCBANK", {"return_on_equity": 66.7, "net_profit_margin": 66.7, "debt_to_equity": 66.7, "interest_coverage_ratio": 66.7}),
-            ("SBIN",     {"return_on_equity": 33.3, "net_profit_margin": 33.3, "debt_to_equity": 33.3, "interest_coverage_ratio": 33.3}),
+            (
+                "HDFCBANK",
+                {
+                    "return_on_equity": 66.7,
+                    "net_profit_margin": 66.7,
+                    "debt_to_equity": 66.7,
+                    "interest_coverage_ratio": 66.7,
+                },
+            ),
+            (
+                "SBIN",
+                {
+                    "return_on_equity": 33.3,
+                    "net_profit_margin": 33.3,
+                    "debt_to_equity": 33.3,
+                    "interest_coverage_ratio": 33.3,
+                },
+            ),
         ],
         "FMCG": [
-            ("HINDUNILVR", {"return_on_equity": 75.0, "net_profit_margin": 75.0, "debt_to_equity": 75.0, "interest_coverage_ratio": 75.0}),
+            (
+                "HINDUNILVR",
+                {
+                    "return_on_equity": 75.0,
+                    "net_profit_margin": 75.0,
+                    "debt_to_equity": 75.0,
+                    "interest_coverage_ratio": 75.0,
+                },
+            ),
         ],
     }
 
     # Only seed a subset of metrics to keep fixture lean
-    seed_metrics = ["return_on_equity", "net_profit_margin", "debt_to_equity", "interest_coverage_ratio"]
+    seed_metrics = [
+        "return_on_equity",
+        "net_profit_margin",
+        "debt_to_equity",
+        "interest_coverage_ratio",
+    ]
 
     for pg, members in companies.items():
         for name, pctls in members:
@@ -66,6 +107,7 @@ def db_and_metrics():
 
 # ── _pct_fill helper ──────────────────────────────────────────────────────────
 
+
 class TestPctFill:
     def test_dark_green(self):
         assert _pct_fill(85).fill_type == "solid"
@@ -80,6 +122,7 @@ class TestPctFill:
 
 # ── Basic export ──────────────────────────────────────────────────────────────
 
+
 class TestBasicExport:
     def test_creates_file(self, db_and_metrics, tmp_path):
         conn, metrics = db_and_metrics
@@ -93,6 +136,7 @@ class TestBasicExport:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         wb = load_workbook(str(out))
         assert "Overview" in wb.sheetnames
 
@@ -101,6 +145,7 @@ class TestBasicExport:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         wb = load_workbook(str(out))
         # Overview + IT + Financial Services + FMCG = 4
         assert len(wb.sheetnames) == 4
@@ -111,12 +156,14 @@ class TestBasicExport:
 
 # ── Overview sheet ────────────────────────────────────────────────────────────
 
+
 class TestOverviewSheet:
     def test_has_peer_group_column(self, db_and_metrics, tmp_path):
         conn, metrics = db_and_metrics
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Overview"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         assert "Peer Group" in headers
@@ -126,6 +173,7 @@ class TestOverviewSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Overview"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         assert "Overall Avg" in headers
@@ -135,6 +183,7 @@ class TestOverviewSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Overview"]
         data_rows = ws.max_row - 1  # minus header
         assert data_rows == 3  # IT, Financial Services, FMCG
@@ -144,6 +193,7 @@ class TestOverviewSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Overview"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         avg_col = headers.index("Overall Avg") + 1
@@ -155,6 +205,7 @@ class TestOverviewSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["Overview"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         avg_col = headers.index("Overall Avg") + 1
@@ -164,12 +215,14 @@ class TestOverviewSheet:
 
 # ── Peer group sheets ─────────────────────────────────────────────────────────
 
+
 class TestPeerGroupSheet:
     def test_has_company_name_column(self, db_and_metrics, tmp_path):
         conn, metrics = db_and_metrics
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["IT"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         assert "company_name" in headers
@@ -179,6 +232,7 @@ class TestPeerGroupSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["IT"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         assert "Composite" in headers
@@ -188,6 +242,7 @@ class TestPeerGroupSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["IT"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         comp_col = headers.index("Composite") + 1
@@ -199,6 +254,7 @@ class TestPeerGroupSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["IT"]
         # Last data row + 1 = benchmark row
         # 2 data rows (TCS, INFY) → data rows 2-3, benchmark at row 4
@@ -211,6 +267,7 @@ class TestPeerGroupSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["IT"]
         bench_row = ws.max_row
         # Benchmark row should have distinct fill
@@ -223,6 +280,7 @@ class TestPeerGroupSheet:
         out = tmp_path / "peer.xlsx"
         export_peer_comparison_excel(conn, str(out), 2024, metrics=metrics)
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["IT"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         comp_col = headers.index("Composite") + 1
@@ -234,6 +292,7 @@ class TestPeerGroupSheet:
 
 
 # ── Edge cases ────────────────────────────────────────────────────────────────
+
 
 class TestEdgeCases:
     def test_no_data_raises(self, tmp_path):
@@ -251,6 +310,7 @@ class TestEdgeCases:
             conn, str(out), 2024, metrics=["return_on_equity", "debt_to_equity"]
         )
         from openpyxl import load_workbook
+
         ws = load_workbook(str(out))["IT"]
         headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
         # Should only have company_name + the 2 metrics + Composite

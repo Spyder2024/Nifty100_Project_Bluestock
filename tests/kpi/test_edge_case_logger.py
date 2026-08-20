@@ -5,7 +5,6 @@ Day 13 — Tests for edge_case_logger.py
 import csv
 from pathlib import Path
 
-import pytest
 
 from src.analytics.edge_case_logger import (
     EdgeCaseLogger,

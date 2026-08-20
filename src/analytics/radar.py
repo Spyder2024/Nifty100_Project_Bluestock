@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Optional
 
 import matplotlib
+
 matplotlib.use("Agg")  # non-interactive — safe for headless / CI
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
-
 
 # ── Metric labels for radar axes ───────────────────────────────────────────────
 
@@ -38,6 +38,7 @@ RADAR_METRICS: list[str] = list(DEFAULT_METRIC_LABELS.keys())
 
 
 # ── Core chart builder ────────────────────────────────────────────────────────
+
 
 def create_radar_chart(
     company_name: str,
@@ -103,19 +104,31 @@ def create_radar_chart(
     )
 
     # Company polygon
-    ax.plot(angles_closed, company_closed, "o-", linewidth=2.2,
-            color=company_color, label=company_name, markersize=5)
-    ax.fill(angles_closed, company_closed, alpha=fill_alpha,
-            color=company_color)
+    ax.plot(
+        angles_closed,
+        company_closed,
+        "o-",
+        linewidth=2.2,
+        color=company_color,
+        label=company_name,
+        markersize=5,
+    )
+    ax.fill(angles_closed, company_closed, alpha=fill_alpha, color=company_color)
 
     # Peer-average overlay
     if peer_avg_percentiles is not None:
         peer_values = [peer_avg_percentiles.get(m, 0.0) for m in metrics]
         peer_closed = peer_values + peer_values[:1]
-        ax.plot(angles_closed, peer_closed, "s--", linewidth=1.6,
-                color=peer_color, label=f"{peer_group} Avg", markersize=4)
-        ax.fill(angles_closed, peer_closed, alpha=fill_alpha * 0.5,
-                color=peer_color)
+        ax.plot(
+            angles_closed,
+            peer_closed,
+            "s--",
+            linewidth=1.6,
+            color=peer_color,
+            label=f"{peer_group} Avg",
+            markersize=4,
+        )
+        ax.fill(angles_closed, peer_closed, alpha=fill_alpha * 0.5, color=peer_color)
 
     # ── styling ───────────────────────────────────────────────────────────
     labels = [metric_labels.get(m, m) for m in metrics]
@@ -123,8 +136,7 @@ def create_radar_chart(
 
     ax.set_ylim(0, 100)
     ax.set_yticks([20, 40, 60, 80, 100])
-    ax.set_yticklabels(["20", "40", "60", "80", "100"],
-                        fontsize=7, color="grey")
+    ax.set_yticklabels(["20", "40", "60", "80", "100"], fontsize=7, color="grey")
 
     ax.grid(True, alpha=0.3)
     ax.spines["polar"].set_visible(False)
@@ -140,6 +152,7 @@ def create_radar_chart(
 
 
 # ── PNG export ────────────────────────────────────────────────────────────────
+
 
 def export_radar_png(
     fig: Figure,
@@ -159,6 +172,7 @@ def export_radar_png(
 
 
 # ── DB-backed convenience ────────────────────────────────────────────────────
+
 
 def create_peer_radar_from_db(
     conn,
@@ -189,9 +203,7 @@ def create_peer_radar_from_db(
 
     # Compute peer group mean percentiles
     peer_data = load_peer_percentiles(conn, peer_group=peer_group, year=year)
-    peer_avg = (
-        peer_data.groupby("metric_name")["percentile_rank"].mean().to_dict()
-    )
+    peer_avg = peer_data.groupby("metric_name")["percentile_rank"].mean().to_dict()
 
     return create_radar_chart(
         company_name=company_name,
@@ -231,9 +243,7 @@ def export_peer_group_radars(
 
     # Peer-group average (computed once)
     peer_data = load_peer_percentiles(conn, peer_group=peer_group, year=year)
-    peer_avg = (
-        peer_data.groupby("metric_name")["percentile_rank"].mean().to_dict()
-    )
+    peer_avg = peer_data.groupby("metric_name")["percentile_rank"].mean().to_dict()
 
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

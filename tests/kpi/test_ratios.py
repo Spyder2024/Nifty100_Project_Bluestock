@@ -26,9 +26,8 @@ Tests covering:
 """
 
 import logging
-import pytest
 from src.analytics.cagr import cagr
-from src.analytics.cashflow_kpis import cfo_quality_score, free_cash_flow
+from src.analytics.cashflow_kpis import cfo_quality_score
 from src.analytics.ratios import (
     asset_turnover,
     debt_to_equity,
@@ -47,28 +46,38 @@ from src.analytics.ratios import (
 
 def test_01_roe_positive_equity():
     """1. ROE with positive equity: net_profit=500, equity_capital=100, reserves=1900 -> 25.0%."""
-    roe = return_on_equity(net_profit=500.0, equity_capital=100.0, reserves_and_surplus=1900.0)
+    roe = return_on_equity(
+        net_profit=500.0, equity_capital=100.0, reserves_and_surplus=1900.0
+    )
     assert roe == 25.0
 
 
 def test_02_roe_negative_equity_returns_none():
     """2. ROE with negative equity (accumulated losses) returns None."""
-    roe_neg = return_on_equity(net_profit=50.0, equity_capital=100.0, reserves_and_surplus=-300.0)
+    roe_neg = return_on_equity(
+        net_profit=50.0, equity_capital=100.0, reserves_and_surplus=-300.0
+    )
     assert roe_neg is None
 
-    roe_zero = return_on_equity(net_profit=50.0, equity_capital=100.0, reserves_and_surplus=-100.0)
+    roe_zero = return_on_equity(
+        net_profit=50.0, equity_capital=100.0, reserves_and_surplus=-100.0
+    )
     assert roe_zero is None
 
 
 def test_03_de_debt_free_returns_zero():
     """3. D/E for debt-free company (borrowings=0) returns 0.0 (not None)."""
-    de = debt_to_equity(borrowings=0.0, equity_capital=100.0, reserves_and_surplus=900.0)
+    de = debt_to_equity(
+        borrowings=0.0, equity_capital=100.0, reserves_and_surplus=900.0
+    )
     assert de == 0.0
 
 
 def test_04_icr_zero_interest_returns_none():
     """4. ICR when interest=0 returns None (division by zero / debt-free)."""
-    icr = interest_coverage_ratio(operating_profit=1000.0, other_income=50.0, interest=0.0)
+    icr = interest_coverage_ratio(
+        operating_profit=1000.0, other_income=50.0, interest=0.0
+    )
     assert icr is None
 
 
@@ -105,19 +114,32 @@ def test_08_normal_cagr_calculation():
 def test_09_opm_crosscheck_divergence(caplog):
     """9. OPM cross-check divergence flag: logs WARNING if diff > 1.0pp."""
     with caplog.at_level(logging.WARNING):
-        opm = operating_profit_margin(operating_profit=200.0, sales=1000.0, source_opm=15.0)
+        opm = operating_profit_margin(
+            operating_profit=200.0, sales=1000.0, source_opm=15.0
+        )
         assert opm == 20.0
-        assert any("OPM cross-check mismatch" in record.message for record in caplog.records)
+        assert any(
+            "OPM cross-check mismatch" in record.message for record in caplog.records
+        )
 
 
 def test_10_cfo_quality_score():
     """10. CFO quality score: >1.0 High Quality, 0.5-1.0 Moderate, <0.5 Accrual Risk."""
     # High Quality
-    assert cfo_quality_score(cfo_values=[120.0, 150.0], pat_values=[100.0, 100.0]) == "High Quality"
+    assert (
+        cfo_quality_score(cfo_values=[120.0, 150.0], pat_values=[100.0, 100.0])
+        == "High Quality"
+    )
     # Moderate
-    assert cfo_quality_score(cfo_values=[70.0, 80.0], pat_values=[100.0, 100.0]) == "Moderate"
+    assert (
+        cfo_quality_score(cfo_values=[70.0, 80.0], pat_values=[100.0, 100.0])
+        == "Moderate"
+    )
     # Accrual Risk
-    assert cfo_quality_score(cfo_values=[30.0, 40.0], pat_values=[100.0, 100.0]) == "Accrual Risk"
+    assert (
+        cfo_quality_score(cfo_values=[30.0, 40.0], pat_values=[100.0, 100.0])
+        == "Accrual Risk"
+    )
 
 
 def test_11_roce_standard_calculation():
@@ -142,7 +164,9 @@ def test_12_roce_financials_sector_note(caplog):
             broad_sector="Financials",
         )
         assert roce == 10.0
-        assert any("Financials sector company" in record.message for record in caplog.records)
+        assert any(
+            "Financials sector company" in record.message for record in caplog.records
+        )
 
 
 def test_13_net_profit_margin():

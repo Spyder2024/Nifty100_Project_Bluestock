@@ -94,20 +94,21 @@ if peer_count < 2:
 #   invert=True  → lower raw value is better (D/E)
 #                  percentile is flipped so high = good
 RADAR_METRICS: list[tuple[str, str, bool]] = [
-    ("roe",                "ROE",           False),
-    ("roce",               "ROCE",          False),
-    ("net_profit_margin",  "NPM",           False),
-    ("opm",                "OPM",           False),
-    ("current_ratio",      "Current Ratio", False),
-    ("interest_coverage",  "ICR",           False),
-    ("debt_to_equity",     "D/E (inv)",     True),
-    ("revenue_cagr_5yr",   "Rev CAGR 5Y",   False),
-    ("net_profit_cagr_5yr","PAT CAGR 5Y",   False),
-    ("earning_yield",      "Earning Yield", False),
+    ("roe", "ROE", False),
+    ("roce", "ROCE", False),
+    ("net_profit_margin", "NPM", False),
+    ("opm", "OPM", False),
+    ("current_ratio", "Current Ratio", False),
+    ("interest_coverage", "ICR", False),
+    ("debt_to_equity", "D/E (inv)", True),
+    ("revenue_cagr_5yr", "Rev CAGR 5Y", False),
+    ("net_profit_cagr_5yr", "PAT CAGR 5Y", False),
+    ("earning_yield", "Earning Yield", False),
 ]
 
 
 # ── Percentile helper ─────────────────────────────────────────────────
+
 
 def _percentile_rank(value: float, series: pd.Series) -> float:
     """Return 0-100 percentile rank of *value* within *series*.
@@ -150,12 +151,14 @@ for col, label, invert in RADAR_METRICS:
     peer_avg_pcts.append(avg_pct)
 
     display_val = round(raw_val, 2) if pd.notna(raw_val) else "N/A"
-    detail_rows.append({
-        "Metric": label,
-        "Company Value": display_val,
-        "Peer Average": round(peer_mean, 2),
-        "Percentile": pct,
-    })
+    detail_rows.append(
+        {
+            "Metric": label,
+            "Company Value": display_val,
+            "Peer Average": round(peer_mean, 2),
+            "Percentile": pct,
+        }
+    )
 
 # ── Radar chart (Plotly Scatterpolar) ─────────────────────────────────
 if len(metric_labels) >= 3:
@@ -166,23 +169,27 @@ if len(metric_labels) >= 3:
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatterpolar(
-        r=r_company,
-        theta=theta,
-        fill="toself",
-        name=company_name,
-        line=dict(color="#1E88E5", width=2.5),
-        marker=dict(size=6),
-    ))
+    fig.add_trace(
+        go.Scatterpolar(
+            r=r_company,
+            theta=theta,
+            fill="toself",
+            name=company_name,
+            line=dict(color="#1E88E5", width=2.5),
+            marker=dict(size=6),
+        )
+    )
 
-    fig.add_trace(go.Scatterpolar(
-        r=r_peer,
-        theta=theta,
-        fill="toself",
-        name=f"{peer_group} Avg",
-        line=dict(color="#E53935", width=1.8, dash="dot"),
-        marker=dict(size=5),
-    ))
+    fig.add_trace(
+        go.Scatterpolar(
+            r=r_peer,
+            theta=theta,
+            fill="toself",
+            name=f"{peer_group} Avg",
+            line=dict(color="#E53935", width=1.8, dash="dot"),
+            marker=dict(size=5),
+        )
+    )
 
     fig.update_layout(
         polar=dict(
@@ -201,17 +208,13 @@ if len(metric_labels) >= 3:
 
     st.plotly_chart(fig, use_container_width=True)
 else:
-    st.warning(
-        "Not enough metrics with data to render a radar chart (need ≥ 3)."
-    )
+    st.warning("Not enough metrics with data to render a radar chart (need ≥ 3).")
 
 # ── Percentile detail table ───────────────────────────────────────────
 st.subheader("Percentile Breakdown")
 
 if detail_rows:
-    st.dataframe(
-        pd.DataFrame(detail_rows), hide_index=True, use_container_width=True
-    )
+    st.dataframe(pd.DataFrame(detail_rows), hide_index=True, use_container_width=True)
 
 # ── Top & Bottom performers within the peer group ─────────────────────
 st.subheader("Top & Bottom Performers in Peer Group")
@@ -228,15 +231,11 @@ if detail_rows:
 
     # Determine whether this metric is inverted
     _, _, invert = next(
-        (c, l, inv) for c, l, inv in RADAR_METRICS if l == selected_label
+        (c, lbl, inv) for c, lbl, inv in RADAR_METRICS if lbl == selected_label
     )
 
     if db_col and db_col in peer_df.columns:
-        ranking = (
-            peer_df[["company_name", db_col]]
-            .dropna(subset=[db_col])
-            .copy()
-        )
+        ranking = peer_df[["company_name", db_col]].dropna(subset=[db_col]).copy()
         # For inverted metrics (D/E), lower raw value = better → sort ascending
         ranking = ranking.sort_values(db_col, ascending=invert)
 

@@ -13,7 +13,6 @@ from src.reports.tearsheet import (
     render_profitability_trend_chart,
     render_balance_sheet_chart,
     render_cashflow_waterfall_chart,
-    build_tearsheet_pdf,
     generate_tearsheet,
     generate_all_tearsheets,
 )
@@ -72,7 +71,9 @@ class TestTearsheetCharts:
 
 class TestTearsheetPDFGeneration:
 
-    @pytest.mark.parametrize("ticker", ["TCS", "HDFCBANK", "RELIANCE", "SUNPHARMA", "TATASTEEL"])
+    @pytest.mark.parametrize(
+        "ticker", ["TCS", "HDFCBANK", "RELIANCE", "SUNPHARMA", "TATASTEEL"]
+    )
     def test_generates_exact_2_page_pdf(self, ticker, tmp_path):
         pdf_path = generate_tearsheet(ticker, output_dir=tmp_path)
         assert pdf_path.exists()
@@ -81,9 +82,10 @@ class TestTearsheetPDFGeneration:
         assert pages == 2, f"{ticker} PDF generated {pages} pages instead of 2"
 
     def test_generate_all_tearsheets_subset(self, tmp_path):
-        generated, skipped = generate_all_tearsheets(tickers=["TCS", "RELIANCE"], output_dir=tmp_path)
+        generated, skipped = generate_all_tearsheets(
+            tickers=["TCS", "RELIANCE"], output_dir=tmp_path
+        )
         assert len(generated) == 2
         for r in generated:
             assert r.exists()
             assert _get_pdf_page_count(r) == 2
-

@@ -29,14 +29,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import io
 import logging
-import os
 import sqlite3
 import sys
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import pandas as pd
 from reportlab.lib import colors
@@ -45,7 +42,6 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     HRFlowable,
-    KeepTogether,
     PageBreak,
     Paragraph,
     SimpleDocTemplate,
@@ -55,7 +51,9 @@ from reportlab.platypus import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -114,7 +112,12 @@ class PortfolioNumberedCanvas(canvas.Canvas):
         self.restoreState()
 
 
-def _fmt_val(val: Optional[float], is_currency: bool = False, is_pct: bool = False, decimals: int = 2) -> str:
+def _fmt_val(
+    val: Optional[float],
+    is_currency: bool = False,
+    is_pct: bool = False,
+    decimals: int = 2,
+) -> str:
     if val is None or pd.isna(val):
         return "-"
     try:
@@ -133,7 +136,9 @@ def _fmt_val(val: Optional[float], is_currency: bool = False, is_pct: bool = Fal
         return str(val)
 
 
-def _compute_trend(curr: Optional[float], prev: Optional[float], is_de: bool = False) -> tuple[str, str, str, colors.Color, colors.Color]:
+def _compute_trend(
+    curr: Optional[float], prev: Optional[float], is_de: bool = False
+) -> tuple[str, str, str, colors.Color, colors.Color]:
     if curr is None or prev is None or pd.isna(curr) or pd.isna(prev) or prev == 0:
         return ("-", "-", "N/A", SLATE_GREY, LIGHT_BG)
     try:
@@ -177,7 +182,9 @@ def _compute_trend(curr: Optional[float], prev: Optional[float], is_de: bool = F
         return ("-", "-", "N/A", SLATE_GREY, LIGHT_BG)
 
 
-def load_portfolio_data(db_path: Path = DEFAULT_DB_PATH) -> tuple[list[dict], dict, dict]:
+def load_portfolio_data(
+    db_path: Path = DEFAULT_DB_PATH,
+) -> tuple[list[dict], dict, dict]:
     conn = sqlite3.connect(str(db_path))
     comp_sql = """
         SELECT c.company_id, c.company_name, s.sector_name, c.nse_symbol, c.isin
@@ -186,11 +193,25 @@ def load_portfolio_data(db_path: Path = DEFAULT_DB_PATH) -> tuple[list[dict], di
         ORDER BY c.company_id ASC
     """
     df_comps = pd.read_sql(comp_sql, conn)
-    df_is = pd.read_sql("SELECT company_id, year, revenue, operating_income, net_income, opm, npm FROM income_statement", conn)
-    df_bs = pd.read_sql("SELECT company_id, year, total_assets, total_liabilities, total_equity, borrowings FROM balance_sheet", conn)
-    df_cf = pd.read_sql("SELECT company_id, year, operating_cf, investing_cf, financing_cf, net_cash_flow, capex, fcf FROM cash_flow", conn)
-    df_ratios = pd.read_sql("SELECT company_id, year, roe, roce, debt_to_equity, net_profit_margin, opm, price_to_earnings FROM ratios", conn)
-    df_mcap = pd.read_sql("SELECT company_id, year, market_cap_cr FROM market_cap", conn)
+    df_is = pd.read_sql(
+        "SELECT company_id, year, revenue, operating_income, net_income, opm, npm FROM income_statement",
+        conn,
+    )
+    df_bs = pd.read_sql(
+        "SELECT company_id, year, total_assets, total_liabilities, total_equity, borrowings FROM balance_sheet",
+        conn,
+    )
+    df_cf = pd.read_sql(
+        "SELECT company_id, year, operating_cf, investing_cf, financing_cf, net_cash_flow, capex, fcf FROM cash_flow",
+        conn,
+    )
+    df_ratios = pd.read_sql(
+        "SELECT company_id, year, roe, roce, debt_to_equity, net_profit_margin, opm, price_to_earnings FROM ratios",
+        conn,
+    )
+    df_mcap = pd.read_sql(
+        "SELECT company_id, year, market_cap_cr FROM market_cap", conn
+    )
     conn.close()
 
     cf_intel_map = {}
@@ -224,16 +245,46 @@ def load_portfolio_data(db_path: Path = DEFAULT_DB_PATH) -> tuple[list[dict], di
     for _, c_row in df_comps.iterrows():
         cid = str(c_row["company_id"]).strip()
         cname = str(c_row["company_name"]).strip()
-        sector = str(c_row["sector_name"] if pd.notna(c_row["sector_name"]) else "Unclassified").strip()
+        sector = str(
+            c_row["sector_name"] if pd.notna(c_row["sector_name"]) else "Unclassified"
+        ).strip()
 
-        sub_is = df_is[df_is["company_id"] == cid].sort_values("year", ascending=False).reset_index(drop=True)
-        sub_bs = df_bs[df_bs["company_id"] == cid].sort_values("year", ascending=False).reset_index(drop=True)
-        sub_cf = df_cf[df_cf["company_id"] == cid].sort_values("year", ascending=False).reset_index(drop=True)
-        sub_rat = df_ratios[df_ratios["company_id"] == cid].sort_values("year", ascending=False).reset_index(drop=True)
-        sub_mcap = df_mcap[df_mcap["company_id"] == cid].sort_values("year", ascending=False).reset_index(drop=True)
+        sub_is = (
+            df_is[df_is["company_id"] == cid]
+            .sort_values("year", ascending=False)
+            .reset_index(drop=True)
+        )
+        sub_bs = (
+            df_bs[df_bs["company_id"] == cid]
+            .sort_values("year", ascending=False)
+            .reset_index(drop=True)
+        )
+        sub_cf = (
+            df_cf[df_cf["company_id"] == cid]
+            .sort_values("year", ascending=False)
+            .reset_index(drop=True)
+        )
+        sub_rat = (
+            df_ratios[df_ratios["company_id"] == cid]
+            .sort_values("year", ascending=False)
+            .reset_index(drop=True)
+        )
+        sub_mcap = (
+            df_mcap[df_mcap["company_id"] == cid]
+            .sort_values("year", ascending=False)
+            .reset_index(drop=True)
+        )
 
-        latest_yr = sub_is.iloc[0]["year"] if not sub_is.empty else (sub_rat.iloc[0]["year"] if not sub_rat.empty else "Latest")
-        prev_yr = sub_is.iloc[1]["year"] if len(sub_is) > 1 else (sub_rat.iloc[1]["year"] if len(sub_rat) > 1 else None)
+        latest_yr = (
+            sub_is.iloc[0]["year"]
+            if not sub_is.empty
+            else (sub_rat.iloc[0]["year"] if not sub_rat.empty else "Latest")
+        )
+        prev_yr = (
+            sub_is.iloc[1]["year"]
+            if len(sub_is) > 1
+            else (sub_rat.iloc[1]["year"] if len(sub_rat) > 1 else None)
+        )
 
         rev_curr = sub_is.iloc[0]["revenue"] if not sub_is.empty else None
         rev_prev = sub_is.iloc[1]["revenue"] if len(sub_is) > 1 else None
@@ -241,8 +292,16 @@ def load_portfolio_data(db_path: Path = DEFAULT_DB_PATH) -> tuple[list[dict], di
         pat_curr = sub_is.iloc[0]["net_income"] if not sub_is.empty else None
         pat_prev = sub_is.iloc[1]["net_income"] if len(sub_is) > 1 else None
 
-        opm_curr = sub_rat.iloc[0]["opm"] if not sub_rat.empty and pd.notna(sub_rat.iloc[0]["opm"]) else (sub_is.iloc[0]["opm"] if not sub_is.empty else None)
-        opm_prev = sub_rat.iloc[1]["opm"] if len(sub_rat) > 1 and pd.notna(sub_rat.iloc[1]["opm"]) else (sub_is.iloc[1]["opm"] if len(sub_is) > 1 else None)
+        opm_curr = (
+            sub_rat.iloc[0]["opm"]
+            if not sub_rat.empty and pd.notna(sub_rat.iloc[0]["opm"])
+            else (sub_is.iloc[0]["opm"] if not sub_is.empty else None)
+        )
+        opm_prev = (
+            sub_rat.iloc[1]["opm"]
+            if len(sub_rat) > 1 and pd.notna(sub_rat.iloc[1]["opm"])
+            else (sub_is.iloc[1]["opm"] if len(sub_is) > 1 else None)
+        )
 
         roe_curr = sub_rat.iloc[0]["roe"] if not sub_rat.empty else None
         roe_prev = sub_rat.iloc[1]["roe"] if len(sub_rat) > 1 else None
@@ -281,45 +340,63 @@ def load_portfolio_data(db_path: Path = DEFAULT_DB_PATH) -> tuple[list[dict], di
             r_rat = sub_rat[sub_rat["year"] == yr]
             r_cf = sub_cf[sub_cf["year"] == yr]
 
-            hist_table_data.append({
-                "year": yr,
-                "revenue": r_is.iloc[0]["revenue"] if not r_is.empty else None,
-                "net_income": r_is.iloc[0]["net_income"] if not r_is.empty else None,
-                "opm": r_rat.iloc[0]["opm"] if not r_rat.empty and pd.notna(r_rat.iloc[0]["opm"]) else (r_is.iloc[0]["opm"] if not r_is.empty else None),
-                "roe": r_rat.iloc[0]["roe"] if not r_rat.empty else None,
-                "roce": r_rat.iloc[0]["roce"] if not r_rat.empty else None,
-                "debt_to_equity": r_rat.iloc[0]["debt_to_equity"] if not r_rat.empty else None,
-                "cfo": r_cf.iloc[0]["operating_cf"] if not r_cf.empty else None,
-            })
+            hist_table_data.append(
+                {
+                    "year": yr,
+                    "revenue": r_is.iloc[0]["revenue"] if not r_is.empty else None,
+                    "net_income": (
+                        r_is.iloc[0]["net_income"] if not r_is.empty else None
+                    ),
+                    "opm": (
+                        r_rat.iloc[0]["opm"]
+                        if not r_rat.empty and pd.notna(r_rat.iloc[0]["opm"])
+                        else (r_is.iloc[0]["opm"] if not r_is.empty else None)
+                    ),
+                    "roe": r_rat.iloc[0]["roe"] if not r_rat.empty else None,
+                    "roce": r_rat.iloc[0]["roce"] if not r_rat.empty else None,
+                    "debt_to_equity": (
+                        r_rat.iloc[0]["debt_to_equity"] if not r_rat.empty else None
+                    ),
+                    "cfo": r_cf.iloc[0]["operating_cf"] if not r_cf.empty else None,
+                }
+            )
 
         intel = cf_intel_map.get(cid, {})
-        c_pros = pros_map.get(cid, ["Established market presence and strong brand franchise."])
-        c_cons = cons_map.get(cid, ["Competitive dynamics and sector headwinds warrant monitoring."])
+        c_pros = pros_map.get(
+            cid, ["Established market presence and strong brand franchise."]
+        )
+        c_cons = cons_map.get(
+            cid, ["Competitive dynamics and sector headwinds warrant monitoring."]
+        )
 
-        companies_data.append({
-            "company_id": cid,
-            "company_name": cname,
-            "sector": sector,
-            "latest_year": latest_yr,
-            "prev_year": prev_yr,
-            "mcap": mcap_val,
-            "kpi_rev": (rev_curr, rev_prev),
-            "kpi_pat": (pat_curr, pat_prev),
-            "kpi_opm": (opm_curr, opm_prev),
-            "kpi_roe": (roe_curr, roe_prev),
-            "kpi_roce": (roce_curr, roce_prev),
-            "kpi_de": (de_curr, de_prev),
-            "kpi_cfo": (cfo_curr, cfo_prev),
-            "hist_table": hist_table_data,
-            "intel": intel,
-            "pros": c_pros,
-            "cons": c_cons,
-        })
+        companies_data.append(
+            {
+                "company_id": cid,
+                "company_name": cname,
+                "sector": sector,
+                "latest_year": latest_yr,
+                "prev_year": prev_yr,
+                "mcap": mcap_val,
+                "kpi_rev": (rev_curr, rev_prev),
+                "kpi_pat": (pat_curr, pat_prev),
+                "kpi_opm": (opm_curr, opm_prev),
+                "kpi_roe": (roe_curr, roe_prev),
+                "kpi_roce": (roce_curr, roce_prev),
+                "kpi_de": (de_curr, de_prev),
+                "kpi_cfo": (cfo_curr, cfo_prev),
+                "hist_table": hist_table_data,
+                "intel": intel,
+                "pros": c_pros,
+                "cons": c_cons,
+            }
+        )
 
     return companies_data, cf_intel_map, pros_map
 
 
-def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = DEFAULT_OUTPUT_PDF) -> Path:
+def build_portfolio_summary_pdf(
+    companies_data: list[dict], output_pdf: Path = DEFAULT_OUTPUT_PDF
+) -> Path:
     output_pdf.parent.mkdir(parents=True, exist_ok=True)
 
     margin = 24.0
@@ -438,7 +515,10 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
         # 1. Header Banner
         header_data = [
             [
-                Paragraph(f"<b>{c['company_name']}</b> <font size=9.5 color='#2563EB'>({c['company_id']})</font>", title_style),
+                Paragraph(
+                    f"<b>{c['company_name']}</b> <font size=9.5 color='#2563EB'>({c['company_id']})</font>",
+                    title_style,
+                ),
                 Paragraph(
                     f"<b>Sector:</b> {c['sector']}<br/>"
                     f"<b>MCap:</b> {_fmt_val(c['mcap'], is_currency=True)} | <b>FY:</b> {c['latest_year']}",
@@ -446,17 +526,31 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
                 ),
             ]
         ]
-        t_header = Table(header_data, colWidths=[usable_width * 0.62, usable_width * 0.38])
-        t_header.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ]))
+        t_header = Table(
+            header_data, colWidths=[usable_width * 0.62, usable_width * 0.38]
+        )
+        t_header.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
         story.append(t_header)
         story.append(Spacer(1, 1))
-        story.append(HRFlowable(width="100%", thickness=1.0, color=ACCENT_BLUE, spaceBefore=1, spaceAfter=4))
+        story.append(
+            HRFlowable(
+                width="100%",
+                thickness=1.0,
+                color=ACCENT_BLUE,
+                spaceBefore=1,
+                spaceAfter=4,
+            )
+        )
 
         # 2. Top 6 KPIs Grid
         c_rev, p_rev = c["kpi_rev"]
@@ -465,7 +559,15 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
             Paragraph("REVENUE", card_title_style),
             Paragraph(f"{_fmt_val(c_rev, is_currency=True)}", card_val_style),
             Paragraph(f"Prior: {_fmt_val(p_rev, is_currency=True)}", card_sub_style),
-            Paragraph(f"<b>{arr1} {lbl1}</b>", ParagraphStyle("T1", parent=card_sub_style, textColor=col1, fontName="Helvetica-Bold")),
+            Paragraph(
+                f"<b>{arr1} {lbl1}</b>",
+                ParagraphStyle(
+                    "T1",
+                    parent=card_sub_style,
+                    textColor=col1,
+                    fontName="Helvetica-Bold",
+                ),
+            ),
         ]
 
         c_pat, p_pat = c["kpi_pat"]
@@ -474,7 +576,15 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
             Paragraph("NET PROFIT (PAT)", card_title_style),
             Paragraph(f"{_fmt_val(c_pat, is_currency=True)}", card_val_style),
             Paragraph(f"Prior: {_fmt_val(p_pat, is_currency=True)}", card_sub_style),
-            Paragraph(f"<b>{arr2} {lbl2}</b>", ParagraphStyle("T2", parent=card_sub_style, textColor=col2, fontName="Helvetica-Bold")),
+            Paragraph(
+                f"<b>{arr2} {lbl2}</b>",
+                ParagraphStyle(
+                    "T2",
+                    parent=card_sub_style,
+                    textColor=col2,
+                    fontName="Helvetica-Bold",
+                ),
+            ),
         ]
 
         c_opm, p_opm = c["kpi_opm"]
@@ -483,7 +593,15 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
             Paragraph("OPERATING MARGIN (OPM)", card_title_style),
             Paragraph(_fmt_val(c_opm, is_pct=True), card_val_style),
             Paragraph(f"Prior: {_fmt_val(p_opm, is_pct=True)}", card_sub_style),
-            Paragraph(f"<b>{arr3} {lbl3}</b>", ParagraphStyle("T3", parent=card_sub_style, textColor=col3, fontName="Helvetica-Bold")),
+            Paragraph(
+                f"<b>{arr3} {lbl3}</b>",
+                ParagraphStyle(
+                    "T3",
+                    parent=card_sub_style,
+                    textColor=col3,
+                    fontName="Helvetica-Bold",
+                ),
+            ),
         ]
 
         c_roe, p_roe = c["kpi_roe"]
@@ -492,7 +610,15 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
             Paragraph("RETURN ON EQUITY (ROE)", card_title_style),
             Paragraph(_fmt_val(c_roe, is_pct=True), card_val_style),
             Paragraph(f"Prior: {_fmt_val(p_roe, is_pct=True)}", card_sub_style),
-            Paragraph(f"<b>{arr4} {lbl4}</b>", ParagraphStyle("T4", parent=card_sub_style, textColor=col4, fontName="Helvetica-Bold")),
+            Paragraph(
+                f"<b>{arr4} {lbl4}</b>",
+                ParagraphStyle(
+                    "T4",
+                    parent=card_sub_style,
+                    textColor=col4,
+                    fontName="Helvetica-Bold",
+                ),
+            ),
         ]
 
         c_roce, p_roce = c["kpi_roce"]
@@ -501,18 +627,36 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
             Paragraph("ROCE", card_title_style),
             Paragraph(_fmt_val(c_roce, is_pct=True), card_val_style),
             Paragraph(f"Prior: {_fmt_val(p_roce, is_pct=True)}", card_sub_style),
-            Paragraph(f"<b>{arr5} {lbl5}</b>", ParagraphStyle("T5", parent=card_sub_style, textColor=col5, fontName="Helvetica-Bold")),
+            Paragraph(
+                f"<b>{arr5} {lbl5}</b>",
+                ParagraphStyle(
+                    "T5",
+                    parent=card_sub_style,
+                    textColor=col5,
+                    fontName="Helvetica-Bold",
+                ),
+            ),
         ]
 
         c_de, p_de = c["kpi_de"]
         arr6, chg6, lbl6, col6, bg6 = _compute_trend(c_de, p_de, is_de=True)
-        de_display = f"{c_de:.2f}x" if c_de is not None and not pd.isna(c_de) else "N/A (Fin)"
+        de_display = (
+            f"{c_de:.2f}x" if c_de is not None and not pd.isna(c_de) else "N/A (Fin)"
+        )
         de_prior = f"{p_de:.2f}x" if p_de is not None and not pd.isna(p_de) else "N/A"
         card6_content = [
             Paragraph("DEBT-TO-EQUITY (D/E)", card_title_style),
             Paragraph(de_display, card_val_style),
             Paragraph(f"Prior: {de_prior}", card_sub_style),
-            Paragraph(f"<b>{arr6} {lbl6}</b>", ParagraphStyle("T6", parent=card_sub_style, textColor=col6, fontName="Helvetica-Bold")),
+            Paragraph(
+                f"<b>{arr6} {lbl6}</b>",
+                ParagraphStyle(
+                    "T6",
+                    parent=card_sub_style,
+                    textColor=col6,
+                    fontName="Helvetica-Bold",
+                ),
+            ),
         ]
 
         col_w = usable_width / 3.0
@@ -522,52 +666,102 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
         ]
 
         t_cards = Table(grid_data, colWidths=[col_w, col_w, col_w])
-        t_cards.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), CARD_BG),
-            ("BOX", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-            ("INNERGRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-            ("TOPPADDING", (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
+        t_cards.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), CARD_BG),
+                    ("BOX", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                    ("TOPPADDING", (0, 0), (-1, -1), 3),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
+        )
         story.append(t_cards)
         story.append(Spacer(1, 4))
 
         # 3. Multi-Year Performance Trend Table
-        story.append(Paragraph("<b>Historical Performance & Financial Trends</b>", sec_heading))
+        story.append(
+            Paragraph("<b>Historical Performance & Financial Trends</b>", sec_heading)
+        )
         hist_headers = ["Metric / FY"] + [h["year"] for h in c["hist_table"]]
         tbl_w = usable_width
         num_hist_cols = len(hist_headers)
-        h_col_w = (tbl_w - 110) / max(1, (num_hist_cols - 1)) if num_hist_cols > 1 else 100
+        h_col_w = (
+            (tbl_w - 110) / max(1, (num_hist_cols - 1)) if num_hist_cols > 1 else 100
+        )
         hist_widths = [110] + [h_col_w] * (num_hist_cols - 1)
 
         hist_rows = [
             [Paragraph(h, table_hdr_style) for h in hist_headers],
-            [Paragraph("<b>Revenue (Cr)</b>", table_cell_style)] + [Paragraph(_fmt_val(h["revenue"], is_currency=False), table_cell_style) for h in c["hist_table"]],
-            [Paragraph("<b>Net Profit (Cr)</b>", table_cell_style)] + [Paragraph(_fmt_val(h["net_income"], is_currency=False), table_cell_style) for h in c["hist_table"]],
-            [Paragraph("<b>Operating Margin (%)</b>", table_cell_style)] + [Paragraph(_fmt_val(h["opm"], is_pct=True), table_cell_style) for h in c["hist_table"]],
-            [Paragraph("<b>Return on Equity (%)</b>", table_cell_style)] + [Paragraph(_fmt_val(h["roe"], is_pct=True), table_cell_style) for h in c["hist_table"]],
-            [Paragraph("<b>ROCE (%)</b>", table_cell_style)] + [Paragraph(_fmt_val(h["roce"], is_pct=True), table_cell_style) for h in c["hist_table"]],
-            [Paragraph("<b>Debt-to-Equity (x)</b>", table_cell_style)] + [Paragraph(f"{h['debt_to_equity']:.2f}" if h["debt_to_equity"] is not None and not pd.isna(h["debt_to_equity"]) else "-", table_cell_style) for h in c["hist_table"]],
-            [Paragraph("<b>Operating CF (Cr)</b>", table_cell_style)] + [Paragraph(_fmt_val(h["cfo"], is_currency=False), table_cell_style) for h in c["hist_table"]],
+            [Paragraph("<b>Revenue (Cr)</b>", table_cell_style)]
+            + [
+                Paragraph(_fmt_val(h["revenue"], is_currency=False), table_cell_style)
+                for h in c["hist_table"]
+            ],
+            [Paragraph("<b>Net Profit (Cr)</b>", table_cell_style)]
+            + [
+                Paragraph(
+                    _fmt_val(h["net_income"], is_currency=False), table_cell_style
+                )
+                for h in c["hist_table"]
+            ],
+            [Paragraph("<b>Operating Margin (%)</b>", table_cell_style)]
+            + [
+                Paragraph(_fmt_val(h["opm"], is_pct=True), table_cell_style)
+                for h in c["hist_table"]
+            ],
+            [Paragraph("<b>Return on Equity (%)</b>", table_cell_style)]
+            + [
+                Paragraph(_fmt_val(h["roe"], is_pct=True), table_cell_style)
+                for h in c["hist_table"]
+            ],
+            [Paragraph("<b>ROCE (%)</b>", table_cell_style)]
+            + [
+                Paragraph(_fmt_val(h["roce"], is_pct=True), table_cell_style)
+                for h in c["hist_table"]
+            ],
+            [Paragraph("<b>Debt-to-Equity (x)</b>", table_cell_style)]
+            + [
+                Paragraph(
+                    (
+                        f"{h['debt_to_equity']:.2f}"
+                        if h["debt_to_equity"] is not None
+                        and not pd.isna(h["debt_to_equity"])
+                        else "-"
+                    ),
+                    table_cell_style,
+                )
+                for h in c["hist_table"]
+            ],
+            [Paragraph("<b>Operating CF (Cr)</b>", table_cell_style)]
+            + [
+                Paragraph(_fmt_val(h["cfo"], is_currency=False), table_cell_style)
+                for h in c["hist_table"]
+            ],
         ]
 
         t_hist = Table(hist_rows, colWidths=hist_widths)
-        t_hist.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), NAVY_LIGHT),
-            ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
-            ("GRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, LIGHT_BG]),
-            ("ALIGN", (0, 0), (0, -1), "LEFT"),
-            ("ALIGN", (1, 0), (-1, -1), "CENTER"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("TOPPADDING", (0, 0), (-1, -1), 2),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ]))
+        t_hist.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), NAVY_LIGHT),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+                    ("GRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, LIGHT_BG]),
+                    ("ALIGN", (0, 0), (0, -1), "LEFT"),
+                    ("ALIGN", (1, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
         story.append(t_hist)
         story.append(Spacer(1, 4))
 
@@ -580,7 +774,11 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
         distress = intel.get("distress_signal", "GREEN")
         distress_lbl = intel.get("distress_label", "Safe / Low Risk")
 
-        distress_col = EMERALD_GREEN if str(distress).upper() == "GREEN" else (ROSE_RED if str(distress).upper() == "RED" else AMBER)
+        distress_col = (
+            EMERALD_GREEN
+            if str(distress).upper() == "GREEN"
+            else (ROSE_RED if str(distress).upper() == "RED" else AMBER)
+        )
 
         left_w = usable_width * 0.46
         right_w = usable_width * 0.54
@@ -591,7 +789,10 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
             Paragraph(f"* <b>Capital Pattern:</b> {cap_pat}", badge_style),
             Paragraph(f"* <b>CFO Quality:</b> {cfo_label} ({cfo_score})", badge_style),
             Paragraph(f"* <b>CapEx Profile:</b> {capex_int}", badge_style),
-            Paragraph(f"* <b>Financial Health:</b> <font color='{distress_col.hexval()}'><b>{distress_lbl}</b></font>", badge_style),
+            Paragraph(
+                f"* <b>Financial Health:</b> <font color='{distress_col.hexval()}'><b>{distress_lbl}</b></font>",
+                badge_style,
+            ),
         ]
 
         top_pros = c["pros"][:2]
@@ -610,17 +811,21 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
 
         bottom_table_data = [[left_cell_content, right_cell_content]]
         t_bottom = Table(bottom_table_data, colWidths=[left_w, right_w])
-        t_bottom.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("BACKGROUND", (0, 0), (0, 0), CARD_BG),
-            ("BACKGROUND", (1, 0), (1, 0), LIGHT_BG),
-            ("BOX", (0, 0), (0, 0), 0.5, BORDER_COLOR),
-            ("BOX", (1, 0), (1, 0), 0.5, BORDER_COLOR),
-            ("TOPPADDING", (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ("LEFTPADDING", (0, 0), (-1, -1), 5),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-        ]))
+        t_bottom.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BACKGROUND", (0, 0), (0, 0), CARD_BG),
+                    ("BACKGROUND", (1, 0), (1, 0), LIGHT_BG),
+                    ("BOX", (0, 0), (0, 0), 0.5, BORDER_COLOR),
+                    ("BOX", (1, 0), (1, 0), 0.5, BORDER_COLOR),
+                    ("TOPPADDING", (0, 0), (-1, -1), 3),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                ]
+            )
+        )
         story.append(t_bottom)
 
         # PageBreak between companies (except after last company)
@@ -628,12 +833,18 @@ def build_portfolio_summary_pdf(companies_data: list[dict], output_pdf: Path = D
             story.append(PageBreak())
 
     doc.build(story, canvasmaker=PortfolioNumberedCanvas)
-    logger.info("Portfolio Summary PDF successfully built -> %s (%d pages)", output_pdf, total_comps)
+    logger.info(
+        "Portfolio Summary PDF successfully built -> %s (%d pages)",
+        output_pdf,
+        total_comps,
+    )
     return output_pdf
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Nifty 100 Portfolio Summary PDF Report.")
+    parser = argparse.ArgumentParser(
+        description="Generate Nifty 100 Portfolio Summary PDF Report."
+    )
     parser.add_argument(
         "--output",
         type=str,
@@ -655,7 +866,7 @@ def main():
     pdf = build_portfolio_summary_pdf(comps, out_path)
     file_size_kb = pdf.stat().st_size / 1024.0
 
-    print(f"\n[SUCCESS] Portfolio Summary PDF generated successfully!")
+    print("\n[SUCCESS] Portfolio Summary PDF generated successfully!")
     print(f"  * File:  {pdf}")
     print(f"  * Size:  {file_size_kb:.1f} KB")
     print(f"  * Pages: {len(comps)} (1 page per company)")

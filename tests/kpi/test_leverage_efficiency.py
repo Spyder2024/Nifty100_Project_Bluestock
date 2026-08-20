@@ -20,11 +20,10 @@ from src.analytics.ratios import (
     interest_coverage_ratio,
     is_high_leverage,
     is_low_icr_warning,
-    net_debt,
 )
 
-
 # ── Debt-to-Equity ────────────────────────────────────────────────────
+
 
 class TestDebtToEquity:
 
@@ -52,6 +51,7 @@ class TestHighLeverageFlag:
 
 # ── Interest Coverage Ratio ───────────────────────────────────────────
 
+
 class TestInterestCoverageRatio:
 
     def test_normal_computation(self):
@@ -74,6 +74,7 @@ class TestInterestCoverageRatio:
 
 
 # ── Asset Turnover ────────────────────────────────────────────────────
+
 
 class TestAssetTurnover:
 

@@ -18,7 +18,7 @@ from src.analytics.ratio_runner import (
     compute_composite_score,
     _create_minimal_tables,
 )
-from src.analytics.edge_case_logger import EdgeCaseLogger, EdgeCaseType
+from src.analytics.edge_case_logger import EdgeCaseLogger
 from src.analytics.ratio_screener import (
     screen_debt_free,
     screen_high_roe,
@@ -27,7 +27,6 @@ from src.analytics.ratio_screener import (
     get_company_ratios,
     ratio_summary,
 )
-
 
 # ==================================================================
 # Test data — 3 companies × 5 years, each with a distinct profile
@@ -40,152 +39,437 @@ COMPANIES = [
 ]
 
 TCS_IS = [
-    {"company_id": "TCS", "year": "2019-03", "sales": 142000,
-     "net_profit": 31000, "operating_profit": 39000,
-     "other_income": 2800, "interest": 0, "depreciation": 4200,
-     "eps": 83.0, "dividend_payout": 35.0},
-    {"company_id": "TCS", "year": "2020-03", "sales": 153000,
-     "net_profit": 33000, "operating_profit": 42000,
-     "other_income": 3000, "interest": 0, "depreciation": 4500,
-     "eps": 89.0, "dividend_payout": 38.0},
-    {"company_id": "TCS", "year": "2021-03", "sales": 165000,
-     "net_profit": 32625, "operating_profit": 45000,
-     "other_income": 3500, "interest": 0, "depreciation": 5000,
-     "eps": 88.0, "dividend_payout": 40.0},
-    {"company_id": "TCS", "year": "2022-03", "sales": 191000,
-     "net_profit": 36900, "operating_profit": 51000,
-     "other_income": 4000, "interest": 0, "depreciation": 5500,
-     "eps": 100.0, "dividend_payout": 45.0},
-    {"company_id": "TCS", "year": "2023-03", "sales": 225458,
-     "net_profit": 34990, "operating_profit": 48534,
-     "other_income": 3800, "interest": 0, "depreciation": 5800,
-     "eps": 95.3, "dividend_payout": 45.0},
+    {
+        "company_id": "TCS",
+        "year": "2019-03",
+        "sales": 142000,
+        "net_profit": 31000,
+        "operating_profit": 39000,
+        "other_income": 2800,
+        "interest": 0,
+        "depreciation": 4200,
+        "eps": 83.0,
+        "dividend_payout": 35.0,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2020-03",
+        "sales": 153000,
+        "net_profit": 33000,
+        "operating_profit": 42000,
+        "other_income": 3000,
+        "interest": 0,
+        "depreciation": 4500,
+        "eps": 89.0,
+        "dividend_payout": 38.0,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2021-03",
+        "sales": 165000,
+        "net_profit": 32625,
+        "operating_profit": 45000,
+        "other_income": 3500,
+        "interest": 0,
+        "depreciation": 5000,
+        "eps": 88.0,
+        "dividend_payout": 40.0,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2022-03",
+        "sales": 191000,
+        "net_profit": 36900,
+        "operating_profit": 51000,
+        "other_income": 4000,
+        "interest": 0,
+        "depreciation": 5500,
+        "eps": 100.0,
+        "dividend_payout": 45.0,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2023-03",
+        "sales": 225458,
+        "net_profit": 34990,
+        "operating_profit": 48534,
+        "other_income": 3800,
+        "interest": 0,
+        "depreciation": 5800,
+        "eps": 95.3,
+        "dividend_payout": 45.0,
+    },
 ]
 
 TCS_BS = [
-    {"company_id": "TCS", "year": "2019-03", "equity_capital": 370,
-     "reserves": 44000, "borrowings": 0, "total_assets": 57370},
-    {"company_id": "TCS", "year": "2020-03", "equity_capital": 370,
-     "reserves": 48000, "borrowings": 0, "total_assets": 62370},
-    {"company_id": "TCS", "year": "2021-03", "equity_capital": 370,
-     "reserves": 52000, "borrowings": 0, "total_assets": 67370},
-    {"company_id": "TCS", "year": "2022-03", "equity_capital": 370,
-     "reserves": 58000, "borrowings": 0, "total_assets": 74370},
-    {"company_id": "TCS", "year": "2023-03", "equity_capital": 370,
-     "reserves": 62000, "borrowings": 0, "total_assets": 79870},
+    {
+        "company_id": "TCS",
+        "year": "2019-03",
+        "equity_capital": 370,
+        "reserves": 44000,
+        "borrowings": 0,
+        "total_assets": 57370,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2020-03",
+        "equity_capital": 370,
+        "reserves": 48000,
+        "borrowings": 0,
+        "total_assets": 62370,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2021-03",
+        "equity_capital": 370,
+        "reserves": 52000,
+        "borrowings": 0,
+        "total_assets": 67370,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2022-03",
+        "equity_capital": 370,
+        "reserves": 58000,
+        "borrowings": 0,
+        "total_assets": 74370,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2023-03",
+        "equity_capital": 370,
+        "reserves": 62000,
+        "borrowings": 0,
+        "total_assets": 79870,
+    },
 ]
 
 TCS_CF = [
-    {"company_id": "TCS", "year": "2019-03", "operating_activity": 30000,
-     "investing_activity": -7000, "financing_activity": -20000},
-    {"company_id": "TCS", "year": "2020-03", "operating_activity": 32000,
-     "investing_activity": -7500, "financing_activity": -22000},
-    {"company_id": "TCS", "year": "2021-03", "operating_activity": 35000,
-     "investing_activity": -8000, "financing_activity": -22000},
-    {"company_id": "TCS", "year": "2022-03", "operating_activity": 39000,
-     "investing_activity": -9000, "financing_activity": -25000},
-    {"company_id": "TCS", "year": "2023-03", "operating_activity": 42000,
-     "investing_activity": -10000, "financing_activity": -28000},
+    {
+        "company_id": "TCS",
+        "year": "2019-03",
+        "operating_activity": 30000,
+        "investing_activity": -7000,
+        "financing_activity": -20000,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2020-03",
+        "operating_activity": 32000,
+        "investing_activity": -7500,
+        "financing_activity": -22000,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2021-03",
+        "operating_activity": 35000,
+        "investing_activity": -8000,
+        "financing_activity": -22000,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2022-03",
+        "operating_activity": 39000,
+        "investing_activity": -9000,
+        "financing_activity": -25000,
+    },
+    {
+        "company_id": "TCS",
+        "year": "2023-03",
+        "operating_activity": 42000,
+        "investing_activity": -10000,
+        "financing_activity": -28000,
+    },
 ]
 
 # RELIANCE — high debt, moderate ROE, positive profit
 REL_IS = [
-    {"company_id": "RELIANCE", "year": "2019-03", "sales": 450000,
-     "net_profit": 35000, "operating_profit": 60000,
-     "other_income": 5000, "interest": 12000, "depreciation": 15000,
-     "eps": 53.0, "dividend_payout": 20.0},
-    {"company_id": "RELIANCE", "year": "2020-03", "sales": 350000,
-     "net_profit": 20000, "operating_profit": 45000,
-     "other_income": 4000, "interest": 12000, "depreciation": 16000,
-     "eps": 30.0, "dividend_payout": 10.0},
-    {"company_id": "RELIANCE", "year": "2021-03", "sales": 530000,
-     "net_profit": 53000, "operating_profit": 75000,
-     "other_income": 6000, "interest": 10000, "depreciation": 17000,
-     "eps": 80.0, "dividend_payout": 15.0},
-    {"company_id": "RELIANCE", "year": "2022-03", "sales": 580000,
-     "net_profit": 60000, "operating_profit": 82000,
-     "other_income": 7000, "interest": 9000, "depreciation": 18000,
-     "eps": 90.0, "dividend_payout": 18.0},
-    {"company_id": "RELIANCE", "year": "2023-03", "sales": 600000,
-     "net_profit": 55000, "operating_profit": 80000,
-     "other_income": 6500, "interest": 8500, "depreciation": 19000,
-     "eps": 83.0, "dividend_payout": 16.0},
+    {
+        "company_id": "RELIANCE",
+        "year": "2019-03",
+        "sales": 450000,
+        "net_profit": 35000,
+        "operating_profit": 60000,
+        "other_income": 5000,
+        "interest": 12000,
+        "depreciation": 15000,
+        "eps": 53.0,
+        "dividend_payout": 20.0,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2020-03",
+        "sales": 350000,
+        "net_profit": 20000,
+        "operating_profit": 45000,
+        "other_income": 4000,
+        "interest": 12000,
+        "depreciation": 16000,
+        "eps": 30.0,
+        "dividend_payout": 10.0,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2021-03",
+        "sales": 530000,
+        "net_profit": 53000,
+        "operating_profit": 75000,
+        "other_income": 6000,
+        "interest": 10000,
+        "depreciation": 17000,
+        "eps": 80.0,
+        "dividend_payout": 15.0,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2022-03",
+        "sales": 580000,
+        "net_profit": 60000,
+        "operating_profit": 82000,
+        "other_income": 7000,
+        "interest": 9000,
+        "depreciation": 18000,
+        "eps": 90.0,
+        "dividend_payout": 18.0,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2023-03",
+        "sales": 600000,
+        "net_profit": 55000,
+        "operating_profit": 80000,
+        "other_income": 6500,
+        "interest": 8500,
+        "depreciation": 19000,
+        "eps": 83.0,
+        "dividend_payout": 16.0,
+    },
 ]
 
 REL_BS = [
-    {"company_id": "RELIANCE", "year": "2019-03", "equity_capital": 3500,
-     "reserves": 250000, "borrowings": 200000, "total_assets": 541500},
-    {"company_id": "RELIANCE", "year": "2020-03", "equity_capital": 3500,
-     "reserves": 270000, "borrowings": 220000, "total_assets": 578500},
-    {"company_id": "RELIANCE", "year": "2021-03", "equity_capital": 3500,
-     "reserves": 310000, "borrowings": 180000, "total_assets": 583500},
-    {"company_id": "RELIANCE", "year": "2022-03", "equity_capital": 3500,
-     "reserves": 350000, "borrowings": 160000, "total_assets": 608500},
-    {"company_id": "RELIANCE", "year": "2023-03", "equity_capital": 3500,
-     "reserves": 380000, "borrowings": 150000, "total_assets": 633500},
+    {
+        "company_id": "RELIANCE",
+        "year": "2019-03",
+        "equity_capital": 3500,
+        "reserves": 250000,
+        "borrowings": 200000,
+        "total_assets": 541500,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2020-03",
+        "equity_capital": 3500,
+        "reserves": 270000,
+        "borrowings": 220000,
+        "total_assets": 578500,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2021-03",
+        "equity_capital": 3500,
+        "reserves": 310000,
+        "borrowings": 180000,
+        "total_assets": 583500,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2022-03",
+        "equity_capital": 3500,
+        "reserves": 350000,
+        "borrowings": 160000,
+        "total_assets": 608500,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2023-03",
+        "equity_capital": 3500,
+        "reserves": 380000,
+        "borrowings": 150000,
+        "total_assets": 633500,
+    },
 ]
 
 REL_CF = [
-    {"company_id": "RELIANCE", "year": "2019-03", "operating_activity": 50000,
-     "investing_activity": -40000, "financing_activity": -10000},
-    {"company_id": "RELIANCE", "year": "2020-03", "operating_activity": 40000,
-     "investing_activity": -30000, "financing_activity": -5000},
-    {"company_id": "RELIANCE", "year": "2021-03", "operating_activity": 65000,
-     "investing_activity": -50000, "financing_activity": -15000},
-    {"company_id": "RELIANCE", "year": "2022-03", "operating_activity": 70000,
-     "investing_activity": -55000, "financing_activity": -18000},
-    {"company_id": "RELIANCE", "year": "2023-03", "operating_activity": 68000,
-     "investing_activity": -48000, "financing_activity": -20000},
+    {
+        "company_id": "RELIANCE",
+        "year": "2019-03",
+        "operating_activity": 50000,
+        "investing_activity": -40000,
+        "financing_activity": -10000,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2020-03",
+        "operating_activity": 40000,
+        "investing_activity": -30000,
+        "financing_activity": -5000,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2021-03",
+        "operating_activity": 65000,
+        "investing_activity": -50000,
+        "financing_activity": -15000,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2022-03",
+        "operating_activity": 70000,
+        "investing_activity": -55000,
+        "financing_activity": -18000,
+    },
+    {
+        "company_id": "RELIANCE",
+        "year": "2023-03",
+        "operating_activity": 68000,
+        "investing_activity": -48000,
+        "financing_activity": -20000,
+    },
 ]
 
 # VODAIDEA — loss-making, negative equity, high debt
 VOD_IS = [
-    {"company_id": "VODAIDEA", "year": "2019-03", "sales": 25000,
-     "net_profit": -5000, "operating_profit": -2000,
-     "other_income": 500, "interest": 3000, "depreciation": 5000,
-     "eps": -8.0, "dividend_payout": 0},
-    {"company_id": "VODAIDEA", "year": "2020-03", "sales": 22000,
-     "net_profit": -7000, "operating_profit": -3500,
-     "other_income": 400, "interest": 3200, "depreciation": 5200,
-     "eps": -12.0, "dividend_payout": 0},
-    {"company_id": "VODAIDEA", "year": "2021-03", "sales": 20000,
-     "net_profit": -8000, "operating_profit": -4000,
-     "other_income": 300, "interest": 3500, "depreciation": 5400,
-     "eps": -14.0, "dividend_payout": 0},
-    {"company_id": "VODAIDEA", "year": "2022-03", "sales": 23000,
-     "net_profit": -6000, "operating_profit": -2500,
-     "other_income": 600, "interest": 3300, "depreciation": 5500,
-     "eps": -10.0, "dividend_payout": 0},
-    {"company_id": "VODAIDEA", "year": "2023-03", "sales": 26000,
-     "net_profit": -3000, "operating_profit": -1000,
-     "other_income": 800, "interest": 3000, "depreciation": 5600,
-     "eps": -5.0, "dividend_payout": 0},
+    {
+        "company_id": "VODAIDEA",
+        "year": "2019-03",
+        "sales": 25000,
+        "net_profit": -5000,
+        "operating_profit": -2000,
+        "other_income": 500,
+        "interest": 3000,
+        "depreciation": 5000,
+        "eps": -8.0,
+        "dividend_payout": 0,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2020-03",
+        "sales": 22000,
+        "net_profit": -7000,
+        "operating_profit": -3500,
+        "other_income": 400,
+        "interest": 3200,
+        "depreciation": 5200,
+        "eps": -12.0,
+        "dividend_payout": 0,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2021-03",
+        "sales": 20000,
+        "net_profit": -8000,
+        "operating_profit": -4000,
+        "other_income": 300,
+        "interest": 3500,
+        "depreciation": 5400,
+        "eps": -14.0,
+        "dividend_payout": 0,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2022-03",
+        "sales": 23000,
+        "net_profit": -6000,
+        "operating_profit": -2500,
+        "other_income": 600,
+        "interest": 3300,
+        "depreciation": 5500,
+        "eps": -10.0,
+        "dividend_payout": 0,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2023-03",
+        "sales": 26000,
+        "net_profit": -3000,
+        "operating_profit": -1000,
+        "other_income": 800,
+        "interest": 3000,
+        "depreciation": 5600,
+        "eps": -5.0,
+        "dividend_payout": 0,
+    },
 ]
 
 VOD_BS = [
-    {"company_id": "VODAIDEA", "year": "2019-03", "equity_capital": 700,
-     "reserves": -20000, "borrowings": 80000, "total_assets": 75700},
-    {"company_id": "VODAIDEA", "year": "2020-03", "equity_capital": 700,
-     "reserves": -27000, "borrowings": 85000, "total_assets": 72700},
-    {"company_id": "VODAIDEA", "year": "2021-03", "equity_capital": 700,
-     "reserves": -35000, "borrowings": 90000, "total_assets": 68700},
-    {"company_id": "VODAIDEA", "year": "2022-03", "equity_capital": 700,
-     "reserves": -41000, "borrowings": 88000, "total_assets": 51200},
-    {"company_id": "VODAIDEA", "year": "2023-03", "equity_capital": 700,
-     "reserves": -44000, "borrowings": 85000, "total_assets": 55700},
+    {
+        "company_id": "VODAIDEA",
+        "year": "2019-03",
+        "equity_capital": 700,
+        "reserves": -20000,
+        "borrowings": 80000,
+        "total_assets": 75700,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2020-03",
+        "equity_capital": 700,
+        "reserves": -27000,
+        "borrowings": 85000,
+        "total_assets": 72700,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2021-03",
+        "equity_capital": 700,
+        "reserves": -35000,
+        "borrowings": 90000,
+        "total_assets": 68700,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2022-03",
+        "equity_capital": 700,
+        "reserves": -41000,
+        "borrowings": 88000,
+        "total_assets": 51200,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2023-03",
+        "equity_capital": 700,
+        "reserves": -44000,
+        "borrowings": 85000,
+        "total_assets": 55700,
+    },
 ]
 
 VOD_CF = [
-    {"company_id": "VODAIDEA", "year": "2019-03", "operating_activity": 2000,
-     "investing_activity": -3000, "financing_activity": 1000},
-    {"company_id": "VODAIDEA", "year": "2020-03", "operating_activity": 1000,
-     "investing_activity": -2500, "financing_activity": 2000},
-    {"company_id": "VODAIDEA", "year": "2021-03", "operating_activity": -500,
-     "investing_activity": -2000, "financing_activity": 3000},
-    {"company_id": "VODAIDEA", "year": "2022-03", "operating_activity": 500,
-     "investing_activity": -2000, "financing_activity": 2000},
-    {"company_id": "VODAIDEA", "year": "2023-03", "operating_activity": 1500,
-     "investing_activity": -2500, "financing_activity": 1000},
+    {
+        "company_id": "VODAIDEA",
+        "year": "2019-03",
+        "operating_activity": 2000,
+        "investing_activity": -3000,
+        "financing_activity": 1000,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2020-03",
+        "operating_activity": 1000,
+        "investing_activity": -2500,
+        "financing_activity": 2000,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2021-03",
+        "operating_activity": -500,
+        "investing_activity": -2000,
+        "financing_activity": 3000,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2022-03",
+        "operating_activity": 500,
+        "investing_activity": -2000,
+        "financing_activity": 2000,
+    },
+    {
+        "company_id": "VODAIDEA",
+        "year": "2023-03",
+        "operating_activity": 1500,
+        "investing_activity": -2500,
+        "financing_activity": 1000,
+    },
 ]
 
 # Aggregate
@@ -197,6 +481,7 @@ ALL_CF = TCS_CF + REL_CF + VOD_CF
 # ==================================================================
 # Fixture — full pipeline in an in-memory DB
 # ==================================================================
+
 
 @pytest.fixture
 def integrated_db():
@@ -219,11 +504,22 @@ def integrated_db():
                 profit_before_tax, tax_percentage, net_profit, eps,
                 dividend_payout)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (r["company_id"], r["year"], r.get("sales"), None,
-             r.get("operating_profit"), None, r.get("other_income"),
-             r.get("interest"), r.get("depreciation"), None,
-             None, r.get("net_profit"), r.get("eps"),
-             r.get("dividend_payout")),
+            (
+                r["company_id"],
+                r["year"],
+                r.get("sales"),
+                None,
+                r.get("operating_profit"),
+                None,
+                r.get("other_income"),
+                r.get("interest"),
+                r.get("depreciation"),
+                None,
+                None,
+                r.get("net_profit"),
+                r.get("eps"),
+                r.get("dividend_payout"),
+            ),
         )
 
     # Balance sheets
@@ -234,9 +530,20 @@ def integrated_db():
                 other_liabilities, total_liabilities, fixed_assets, cwip,
                 investments, other_asset, total_assets)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (r["company_id"], r["year"], r.get("equity_capital"),
-             r.get("reserves"), r.get("borrowings"), None, None,
-             None, None, None, None, r.get("total_assets")),
+            (
+                r["company_id"],
+                r["year"],
+                r.get("equity_capital"),
+                r.get("reserves"),
+                r.get("borrowings"),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                r.get("total_assets"),
+            ),
         )
 
     # Cash flows
@@ -246,8 +553,14 @@ def integrated_db():
                (company_id, year, operating_activity, investing_activity,
                 financing_activity, net_cash_flow)
                VALUES (?,?,?,?,?,?)""",
-            (r["company_id"], r["year"], r.get("operating_activity"),
-             r.get("investing_activity"), r.get("financing_activity"), None),
+            (
+                r["company_id"],
+                r["year"],
+                r.get("operating_activity"),
+                r.get("investing_activity"),
+                r.get("financing_activity"),
+                None,
+            ),
         )
 
     conn.commit()
@@ -295,18 +608,38 @@ def integrated_db():
 
     # Write to financial_ratios
     cols = [
-        "company_id", "year", "net_profit_margin_pct",
-        "operating_profit_margin_pct", "return_on_equity_pct",
-        "return_on_capital_employed_pct", "return_on_assets_pct",
-        "debt_to_equity", "interest_coverage", "is_high_leverage",
-        "is_low_icr_warning", "net_debt_cr", "asset_turnover",
-        "free_cash_flow_cr", "capex_intensity", "fcf_conversion_rate",
-        "cfo_quality_score", "capital_allocation_pattern",
-        "earnings_per_share", "book_value_per_share",
-        "dividend_payout_ratio_pct", "total_debt_cr",
-        "cash_from_operations_cr", "revenue_cagr_3yr", "revenue_cagr_5yr",
-        "revenue_cagr_10yr", "pat_cagr_3yr", "pat_cagr_5yr",
-        "pat_cagr_10yr", "eps_cagr_3yr", "eps_cagr_5yr", "eps_cagr_10yr",
+        "company_id",
+        "year",
+        "net_profit_margin_pct",
+        "operating_profit_margin_pct",
+        "return_on_equity_pct",
+        "return_on_capital_employed_pct",
+        "return_on_assets_pct",
+        "debt_to_equity",
+        "interest_coverage",
+        "is_high_leverage",
+        "is_low_icr_warning",
+        "net_debt_cr",
+        "asset_turnover",
+        "free_cash_flow_cr",
+        "capex_intensity",
+        "fcf_conversion_rate",
+        "cfo_quality_score",
+        "capital_allocation_pattern",
+        "earnings_per_share",
+        "book_value_per_share",
+        "dividend_payout_ratio_pct",
+        "total_debt_cr",
+        "cash_from_operations_cr",
+        "revenue_cagr_3yr",
+        "revenue_cagr_5yr",
+        "revenue_cagr_10yr",
+        "pat_cagr_3yr",
+        "pat_cagr_5yr",
+        "pat_cagr_10yr",
+        "eps_cagr_3yr",
+        "eps_cagr_5yr",
+        "eps_cagr_10yr",
         "composite_quality_score",
     ]
     ph = ", ".join(["?"] * len(cols))
@@ -327,6 +660,7 @@ def integrated_db():
 # ==================================================================
 # Test classes
 # ==================================================================
+
 
 class TestPipelineRowCounts:
     """Verify the pipeline writes the correct number of rows."""
@@ -442,9 +776,7 @@ class TestScreenerOnPipelineOutput:
 
     def test_top_npm_tcs_is_number_one(self, integrated_db):
         conn, _, _ = integrated_db
-        result = top_n_by_kpi(
-            conn, "net_profit_margin_pct", n=3, year="2023-03"
-        )
+        result = top_n_by_kpi(conn, "net_profit_margin_pct", n=3, year="2023-03")
         assert len(result) <= 3
         assert result[0]["company_id"] == "TCS"
 
@@ -461,15 +793,13 @@ class TestEdgeCaseLoggerCapturesIssues:
 
     def test_vodafone_negative_equity_logged(self, integrated_db):
         _, logger, _ = integrated_db
-        neg_eq = [r for r in logger.records
-                  if r.edge_type == "NEGATIVE_EQUITY"]
+        neg_eq = [r for r in logger.records if r.edge_type == "NEGATIVE_EQUITY"]
         ids = {r.company_id for r in neg_eq}
         assert "VODAIDEA" in ids
 
     def test_tcs_debt_free_logged(self, integrated_db):
         _, logger, _ = integrated_db
-        df = [r for r in logger.records
-              if r.edge_type == "DEBT_FREE_SUBSTITUTION"]
+        df = [r for r in logger.records if r.edge_type == "DEBT_FREE_SUBSTITUTION"]
         ids = {r.company_id for r in df}
         assert "TCS" in ids
 
@@ -491,11 +821,16 @@ class TestCompositeScoreSanity:
 
     def test_tcs_higher_than_vodafone(self, integrated_db):
         _, _, rows = integrated_db
-        tcs = [r["composite_quality_score"] for r in rows
-               if r["company_id"] == "TCS"
-               and r["composite_quality_score"] is not None]
-        vod = [r["composite_quality_score"] for r in rows
-               if r["company_id"] == "VODAIDEA"
-               and r["composite_quality_score"] is not None]
+        tcs = [
+            r["composite_quality_score"]
+            for r in rows
+            if r["company_id"] == "TCS" and r["composite_quality_score"] is not None
+        ]
+        vod = [
+            r["composite_quality_score"]
+            for r in rows
+            if r["company_id"] == "VODAIDEA"
+            and r["composite_quality_score"] is not None
+        ]
         if tcs and vod:
             assert max(tcs) > max(vod)

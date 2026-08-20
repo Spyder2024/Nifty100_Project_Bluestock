@@ -6,7 +6,7 @@ Sprint 6, Day 38
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException
@@ -21,7 +21,10 @@ async def get_portfolio_stats() -> Dict[str, Any]:
     """Retrieve P10, P25, P50, P75, P90, Mean, and Std across all 92 constituents."""
     stats_csv = PROJECT_ROOT / "output" / "portfolio_stats.csv"
     if not stats_csv.exists():
-        raise HTTPException(status_code=404, detail="Portfolio statistics not found. Please run profiling pipeline.")
+        raise HTTPException(
+            status_code=404,
+            detail="Portfolio statistics not found. Please run profiling pipeline.",
+        )
 
     df = pd.read_csv(stats_csv)
     return {

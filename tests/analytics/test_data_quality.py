@@ -7,7 +7,6 @@ import pytest
 from src.analytics.data_quality import (
     ALL_DQ_RULES,
     DQ_RULE_NAMES,
-    FINANCIAL_METRICS,
     check_cagr_range,
     check_cfo_quality_range,
     check_de_non_negative,
@@ -26,8 +25,8 @@ from src.analytics.data_quality import (
     run_dq_checks,
 )
 
-
 # ── Clean fixture ──────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def clean_df():
@@ -54,6 +53,7 @@ def clean_df():
 
 # ── Rule 1: No negative market cap ────────────────────────────────────────────
 
+
 class TestNoNegativeMarketCap:
     def test_catches_negative(self):
         df = pd.DataFrame({"market_cap": [100, -50, 200]})
@@ -70,6 +70,7 @@ class TestNoNegativeMarketCap:
 
 # ── Rule 2: No negative revenue ───────────────────────────────────────────────
 
+
 class TestNoNegativeRevenue:
     def test_catches_negative(self):
         df = pd.DataFrame({"revenue_from_operations": [100, -10]})
@@ -81,6 +82,7 @@ class TestNoNegativeRevenue:
 
 
 # ── Rule 3: ROE range ────────────────────────────────────────────────────────
+
 
 class TestROERange:
     def test_catches_too_high(self):
@@ -101,6 +103,7 @@ class TestROERange:
 
 # ── Rule 4: ROCE range ───────────────────────────────────────────────────────
 
+
 class TestROCERange:
     def test_catches_out_of_range(self):
         df = pd.DataFrame({"return_on_capital_employed": [10.0, 501.0]})
@@ -111,6 +114,7 @@ class TestROCERange:
 
 
 # ── Rule 5: D/E non-negative ────────────────────────────────────────────────
+
 
 class TestDENonNegative:
     def test_catches_negative(self):
@@ -127,6 +131,7 @@ class TestDENonNegative:
 
 # ── Rule 6: ICR non-negative ────────────────────────────────────────────────
 
+
 class TestICRNonNegative:
     def test_catches_negative(self):
         df = pd.DataFrame({"interest_coverage_ratio": [5.0, -2.0]})
@@ -137,6 +142,7 @@ class TestICRNonNegative:
 
 
 # ── Rule 7: CFO quality range ───────────────────────────────────────────────
+
 
 class TestCFOQualityRange:
     def test_catches_negative(self):
@@ -153,6 +159,7 @@ class TestCFOQualityRange:
 
 # ── Rule 8: OCF ratio range ────────────────────────────────────────────────
 
+
 class TestOCFRatioRange:
     def test_catches_above_max(self):
         df = pd.DataFrame({"operating_cash_flow_ratio": [1.0, 6.0]})
@@ -164,6 +171,7 @@ class TestOCFRatioRange:
 
 # ── Rule 9: CAGR range ──────────────────────────────────────────────────────
 
+
 class TestCAGRRange:
     def test_catches_extreme_positive(self):
         df = pd.DataFrame({"revenue_cagr_5yr": [10.0, 400.0]})
@@ -174,11 +182,13 @@ class TestCAGRRange:
         assert 0 in check_cagr_range(df)
 
     def test_checks_all_cagr_columns(self):
-        df = pd.DataFrame({
-            "revenue_cagr_5yr": [10.0, 500.0],
-            "net_profit_cagr_5yr": [5.0, 500.0],
-            "ebitda_cagr_5yr": [3.0, 500.0],
-        })
+        df = pd.DataFrame(
+            {
+                "revenue_cagr_5yr": [10.0, 500.0],
+                "net_profit_cagr_5yr": [5.0, 500.0],
+                "ebitda_cagr_5yr": [3.0, 500.0],
+            }
+        )
         result = check_cagr_range(df)
         assert 1 in result
 
@@ -187,6 +197,7 @@ class TestCAGRRange:
 
 
 # ── Rule 10: NPM range ──────────────────────────────────────────────────────
+
 
 class TestNPMRange:
     def test_catches_out_of_range(self):
@@ -199,12 +210,15 @@ class TestNPMRange:
 
 # ── Rule 11: No duplicate company-year ──────────────────────────────────────
 
+
 class TestNoDuplicateCompanyYear:
     def test_catches_dupes(self):
-        df = pd.DataFrame({
-            "company_name": ["A", "A", "B"],
-            "year": [2024, 2024, 2024],
-        })
+        df = pd.DataFrame(
+            {
+                "company_name": ["A", "A", "B"],
+                "year": [2024, 2024, 2024],
+            }
+        )
         result = check_no_duplicate_company_year(df)
         assert len(result) == 2  # both rows 0 and 1 are flagged
 
@@ -213,6 +227,7 @@ class TestNoDuplicateCompanyYear:
 
 
 # ── Rule 12: Sector not null ────────────────────────────────────────────────
+
 
 class TestSectorNotNull:
     def test_catches_null(self):
@@ -231,6 +246,7 @@ class TestSectorNotNull:
 
 # ── Rule 13: Year range ─────────────────────────────────────────────────────
 
+
 class TestYearRange:
     def test_catches_too_old(self):
         df = pd.DataFrame({"year": [2005, 2024]})
@@ -246,21 +262,26 @@ class TestYearRange:
 
 # ── Rule 14: Not all-null metrics ───────────────────────────────────────────
 
+
 class TestNotNullAllMetrics:
     def test_catches_all_null_row(self):
-        df = pd.DataFrame({
-            "return_on_equity": [15.0, np.nan],
-            "debt_to_equity": [0.5, np.nan],
-            "net_profit_margin": [10.0, np.nan],
-        })
+        df = pd.DataFrame(
+            {
+                "return_on_equity": [15.0, np.nan],
+                "debt_to_equity": [0.5, np.nan],
+                "net_profit_margin": [10.0, np.nan],
+            }
+        )
         result = check_not_all_null_metrics(df)
         assert 1 in result
 
     def test_partial_null_passes(self):
-        df = pd.DataFrame({
-            "return_on_equity": [15.0, np.nan],
-            "debt_to_equity": [0.5, 1.0],
-        })
+        df = pd.DataFrame(
+            {
+                "return_on_equity": [15.0, np.nan],
+                "debt_to_equity": [0.5, 1.0],
+            }
+        )
         result = check_not_all_null_metrics(df)
         assert 1 not in result
 
@@ -269,6 +290,7 @@ class TestNotNullAllMetrics:
 
 
 # ── Runner & summary ──────────────────────────────────────────────────────────
+
 
 class TestRunDQChecks:
     def test_returns_all_rule_names(self, clean_df):
@@ -290,10 +312,12 @@ class TestDQSummary:
         assert summary["total_violations"] == 0
 
     def test_failed_rules_listed(self):
-        df = pd.DataFrame({
-            "market_cap": [-100],
-            "return_on_equity": [600],
-        })
+        df = pd.DataFrame(
+            {
+                "market_cap": [-100],
+                "return_on_equity": [600],
+            }
+        )
         result = run_dq_checks(df)
         summary = dq_summary(result)
         assert summary["rules_failed"] >= 2
@@ -301,9 +325,11 @@ class TestDQSummary:
         assert "check_roe_range" in summary["failed_rules"]
 
     def test_total_violations(self):
-        df = pd.DataFrame({
-            "market_cap": [-100, -200, 300],
-        })
+        df = pd.DataFrame(
+            {
+                "market_cap": [-100, -200, 300],
+            }
+        )
         result = run_dq_checks(df)
         summary = dq_summary(result)
         assert summary["total_violations"] == 2

@@ -30,54 +30,128 @@ EXPECTED_TABLES = [
 
 EXPECTED_COLUMNS = {
     "sectors": [
-        "sector_id", "sector_name",
+        "sector_id",
+        "sector_name",
     ],
     "companies": [
-        "company_id", "company_name", "sector_id", "nse_symbol",
-        "bse_code", "isin", "series", "listed_date", "face_value",
+        "company_id",
+        "company_name",
+        "sector_id",
+        "nse_symbol",
+        "bse_code",
+        "isin",
+        "series",
+        "listed_date",
+        "face_value",
     ],
     "balance_sheet": [
-        "company_id", "year", "total_assets", "total_liabilities",
-        "total_equity", "current_assets", "current_liabilities",
-        "non_current_assets", "non_current_liab", "inventories",
-        "cash_and_equiv", "borrowings", "other_current_liab",
-        "trade_payables", "trade_receivables", "fixed_assets",
-        "investments", "reserves", "share_capital", "bs_balance",
+        "company_id",
+        "year",
+        "total_assets",
+        "total_liabilities",
+        "total_equity",
+        "current_assets",
+        "current_liabilities",
+        "non_current_assets",
+        "non_current_liab",
+        "inventories",
+        "cash_and_equiv",
+        "borrowings",
+        "other_current_liab",
+        "trade_payables",
+        "trade_receivables",
+        "fixed_assets",
+        "investments",
+        "reserves",
+        "share_capital",
+        "bs_balance",
     ],
     "income_statement": [
-        "company_id", "year", "revenue", "operating_income",
-        "other_income", "total_expenses", "interest_expense",
-        "depreciation", "tax_expense", "net_income", "eps",
-        "opm", "npm", "ebitda", "ebit",
+        "company_id",
+        "year",
+        "revenue",
+        "operating_income",
+        "other_income",
+        "total_expenses",
+        "interest_expense",
+        "depreciation",
+        "tax_expense",
+        "net_income",
+        "eps",
+        "opm",
+        "npm",
+        "ebitda",
+        "ebit",
     ],
     "cash_flow": [
-        "company_id", "year", "operating_cf", "investing_cf",
-        "financing_cf", "net_cash_flow", "capex", "fcf",
-        "dividend_paid", "buyback_paid", "opening_cash", "closing_cash",
+        "company_id",
+        "year",
+        "operating_cf",
+        "investing_cf",
+        "financing_cf",
+        "net_cash_flow",
+        "capex",
+        "fcf",
+        "dividend_paid",
+        "buyback_paid",
+        "opening_cash",
+        "closing_cash",
     ],
     "ratios": [
-        "company_id", "year", "roe", "roa", "roce",
-        "debt_to_equity", "current_ratio", "quick_ratio",
-        "interest_coverage", "asset_turnover", "net_profit_margin",
-        "opm", "dividend_payout", "earning_yield",
-        "book_value_per_share", "price_to_book", "price_to_earnings",
+        "company_id",
+        "year",
+        "roe",
+        "roa",
+        "roce",
+        "debt_to_equity",
+        "current_ratio",
+        "quick_ratio",
+        "interest_coverage",
+        "asset_turnover",
+        "net_profit_margin",
+        "opm",
+        "dividend_payout",
+        "earning_yield",
+        "book_value_per_share",
+        "price_to_book",
+        "price_to_earnings",
     ],
     "prices": [
-        "company_id", "year", "price_open", "price_high",
-        "price_low", "price_close", "volume",
+        "company_id",
+        "year",
+        "price_open",
+        "price_high",
+        "price_low",
+        "price_close",
+        "volume",
     ],
     "market_cap": [
-        "company_id", "year", "market_cap", "market_cap_cr",
-        "free_float_mcap", "weight_pct",
+        "company_id",
+        "year",
+        "market_cap",
+        "market_cap_cr",
+        "free_float_mcap",
+        "weight_pct",
     ],
     "shareholding": [
-        "company_id", "year", "promoter_pct", "fii_pct",
-        "dii_pct", "public_pct", "govt_pct", "custodian_pct",
+        "company_id",
+        "year",
+        "promoter_pct",
+        "fii_pct",
+        "dii_pct",
+        "public_pct",
+        "govt_pct",
+        "custodian_pct",
     ],
     "dividends": [
-        "company_id", "year", "dividend_per_share",
-        "dividend_yield_pct", "dividend_payout_pct",
-        "total_dividend", "ex_date", "record_date",
+        "company_id",
+        "year",
+        "dividend_per_share",
+        "dividend_yield_pct",
+        "dividend_payout_pct",
+        "total_dividend",
+        "ex_date",
+        "record_date",
     ],
 }
 
@@ -85,6 +159,7 @@ EXPECTED_COLUMNS = {
 # ------------------------------------------------------------------
 # Fixture
 # ------------------------------------------------------------------
+
 
 @pytest.fixture()
 def db_conn():
@@ -100,6 +175,7 @@ def db_conn():
 # ==================================================================
 # Class 1: Schema Creation
 # ==================================================================
+
 
 class TestSchemaCreation:
     """Verify all 10 tables are created with correct columns."""
@@ -139,6 +215,7 @@ class TestSchemaCreation:
 # Class 2: Primary-Key Constraints
 # ==================================================================
 
+
 class TestPrimaryKeys:
     """Verify PK definitions and uniqueness enforcement."""
 
@@ -151,9 +228,7 @@ class TestPrimaryKeys:
     def test_financial_tables_composite_pk(self, db_conn, table):
         info = db_conn.execute(f"PRAGMA table_info({table})").fetchall()
         pk_cols = sorted([c[1] for c in info if c[5] > 0])
-        assert pk_cols == ["company_id", "year"], (
-            f"{table} PK cols = {pk_cols}"
-        )
+        assert pk_cols == ["company_id", "year"], f"{table} PK cols = {pk_cols}"
 
     def test_duplicate_company_rejected(self, db_conn):
         db_conn.execute(
@@ -198,6 +273,7 @@ class TestPrimaryKeys:
 # Class 3: Foreign-Key Constraints
 # ==================================================================
 
+
 class TestForeignKeys:
     """Verify FK enforcement between tables."""
 
@@ -239,9 +315,7 @@ class TestForeignKeys:
             "INSERT INTO balance_sheet (company_id, year, total_assets) "
             "VALUES ('A','2023-03',5000)"
         )
-        cnt = db_conn.execute(
-            "SELECT COUNT(*) FROM balance_sheet"
-        ).fetchone()[0]
+        cnt = db_conn.execute("SELECT COUNT(*) FROM balance_sheet").fetchone()[0]
         assert cnt == 1
 
     def test_financial_table_invalid_company_fk_rejected(self, db_conn):
@@ -268,6 +342,7 @@ class TestForeignKeys:
 # Class 4: Virtual / Generated Columns
 # ==================================================================
 
+
 class TestVirtualColumns:
     """Verify the bs_balance GENERATED ALWAYS AS virtual column."""
 
@@ -278,11 +353,9 @@ class TestVirtualColumns:
 
     def test_bs_balance_zero_when_balanced(self, db_conn):
         self._insert_company(db_conn)
-        db_conn.execute(
-            """INSERT INTO balance_sheet
+        db_conn.execute("""INSERT INTO balance_sheet
                (company_id, year, total_assets, total_liabilities, total_equity)
-               VALUES ('V','2023-03', 10000, 6000, 4000)"""
-        )
+               VALUES ('V','2023-03', 10000, 6000, 4000)""")
         bal = db_conn.execute(
             "SELECT bs_balance FROM balance_sheet WHERE company_id='V'"
         ).fetchone()[0]
@@ -290,11 +363,9 @@ class TestVirtualColumns:
 
     def test_bs_balance_detects_imbalance(self, db_conn):
         self._insert_company(db_conn)
-        db_conn.execute(
-            """INSERT INTO balance_sheet
+        db_conn.execute("""INSERT INTO balance_sheet
                (company_id, year, total_assets, total_liabilities, total_equity)
-               VALUES ('V','2023-03', 10000, 6000, 3500)"""
-        )
+               VALUES ('V','2023-03', 10000, 6000, 3500)""")
         bal = db_conn.execute(
             "SELECT bs_balance FROM balance_sheet WHERE company_id='V'"
         ).fetchone()[0]
@@ -302,11 +373,9 @@ class TestVirtualColumns:
 
     def test_bs_balance_handles_nulls_as_zero(self, db_conn):
         self._insert_company(db_conn)
-        db_conn.execute(
-            """INSERT INTO balance_sheet
+        db_conn.execute("""INSERT INTO balance_sheet
                (company_id, year, total_assets)
-               VALUES ('V','2022-03', 5000)"""
-        )
+               VALUES ('V','2022-03', 5000)""")
         bal = db_conn.execute(
             "SELECT bs_balance FROM balance_sheet "
             "WHERE company_id='V' AND year='2022-03'"
@@ -318,16 +387,15 @@ class TestVirtualColumns:
         """Virtual column should reject explicit INSERT values."""
         self._insert_company(db_conn)
         with pytest.raises(sqlite3.OperationalError):
-            db_conn.execute(
-                """INSERT INTO balance_sheet
+            db_conn.execute("""INSERT INTO balance_sheet
                    (company_id, year, bs_balance)
-                   VALUES ('V','2023-03', 0)"""
-            )
+                   VALUES ('V','2023-03', 0)""")
 
 
 # ==================================================================
 # Class 5: PRAGMA & Defaults
 # ==================================================================
+
 
 class TestPragmaAndDefaults:
     """Verify database settings and column defaults."""
@@ -364,8 +432,7 @@ class TestPragmaAndDefaults:
             "VALUES ('SH','2023-03', 55.0)"
         )
         row = db_conn.execute(
-            "SELECT govt_pct, custodian_pct FROM shareholding "
-            "WHERE company_id='SH'"
+            "SELECT govt_pct, custodian_pct FROM shareholding " "WHERE company_id='SH'"
         ).fetchone()
         assert row[0] == 0
         assert row[1] == 0

@@ -17,10 +17,10 @@ from src.analytics.ratio_screener import (
     ratio_summary,
 )
 
-
 # ------------------------------------------------------------------
 # Fixture: in-memory DB with sample data
 # ------------------------------------------------------------------
+
 
 @pytest.fixture
 def seeded_db():
@@ -47,13 +47,13 @@ def seeded_db():
     );
     """)
     rows = [
-        ("TCS",      "2021-03", 19.8, 45.0, 0.0,  None, 0.65,  27000, 0,     -20000, 82),
-        ("TCS",      "2022-03", 19.3, 47.0, 0.0,  None, 0.68,  30000, 0,     -22000, 85),
-        ("TCS",      "2023-03", 15.5, 44.0, 0.0,  None, 0.70,  32000, 0,     -25000, 80),
-        ("RELIANCE", "2023-03", 10.2,  8.5, 0.40, 5.2,  0.85,  15000, 150000, 125000, 55),
-        ("HDFCBANK", "2023-03", 22.0, 16.0, 5.50, 2.1,  0.06,  25000, 500000, 480000, 60),
-        ("INFOSYS",  "2023-03", 18.5, 32.0, 0.08, 12.5, 0.90,  12000, 2000,   -3000,  72),
-        ("VODAIDEA", "2023-03", -5.0, -15.0, 2.50, 0.8,  0.45, -2000,  80000,  75000,  10),
+        ("TCS", "2021-03", 19.8, 45.0, 0.0, None, 0.65, 27000, 0, -20000, 82),
+        ("TCS", "2022-03", 19.3, 47.0, 0.0, None, 0.68, 30000, 0, -22000, 85),
+        ("TCS", "2023-03", 15.5, 44.0, 0.0, None, 0.70, 32000, 0, -25000, 80),
+        ("RELIANCE", "2023-03", 10.2, 8.5, 0.40, 5.2, 0.85, 15000, 150000, 125000, 55),
+        ("HDFCBANK", "2023-03", 22.0, 16.0, 5.50, 2.1, 0.06, 25000, 500000, 480000, 60),
+        ("INFOSYS", "2023-03", 18.5, 32.0, 0.08, 12.5, 0.90, 12000, 2000, -3000, 72),
+        ("VODAIDEA", "2023-03", -5.0, -15.0, 2.50, 0.8, 0.45, -2000, 80000, 75000, 10),
     ]
     conn.executemany(
         """INSERT INTO financial_ratios
@@ -67,10 +67,10 @@ def seeded_db():
         "INSERT OR REPLACE INTO sectors (company_id, broad_sector, sub_sector) "
         "VALUES (?,?,?)",
         [
-            ("TCS",      "IT",                   "IT Services"),
-            ("RELIANCE", "Energy",               "Oil & Gas"),
-            ("HDFCBANK", "Financials",            "Private Banks"),
-            ("INFOSYS",  "IT",                   "IT Services"),
+            ("TCS", "IT", "IT Services"),
+            ("RELIANCE", "Energy", "Oil & Gas"),
+            ("HDFCBANK", "Financials", "Private Banks"),
+            ("INFOSYS", "IT", "IT Services"),
             ("VODAIDEA", "Communication Services", "Telecom"),
         ],
     )
@@ -82,6 +82,7 @@ def seeded_db():
 # ------------------------------------------------------------------
 # Test classes
 # ------------------------------------------------------------------
+
 
 class TestScreenDebtFree:
     def test_finds_debt_free(self, seeded_db):
@@ -110,8 +111,7 @@ class TestScreenHighRoe:
         result = screen_high_roe(seeded_db, threshold=0)
         if len(result) >= 2:
             assert (
-                result[0]["return_on_equity_pct"]
-                >= result[1]["return_on_equity_pct"]
+                result[0]["return_on_equity_pct"] >= result[1]["return_on_equity_pct"]
             )
 
     def test_respects_limit(self, seeded_db):
@@ -152,8 +152,7 @@ class TestTopNByKpi:
         result = top_n_by_kpi(seeded_db, "return_on_equity_pct", n=5)
         if len(result) >= 2:
             assert (
-                result[0]["return_on_equity_pct"]
-                >= result[1]["return_on_equity_pct"]
+                result[0]["return_on_equity_pct"] >= result[1]["return_on_equity_pct"]
             )
 
     def test_ascending_order(self, seeded_db):
@@ -166,9 +165,7 @@ class TestTopNByKpi:
             top_n_by_kpi(seeded_db, "not_a_real_kpi")
 
     def test_filter_by_year(self, seeded_db):
-        result = top_n_by_kpi(
-            seeded_db, "net_profit_margin_pct", n=5, year="2023-03"
-        )
+        result = top_n_by_kpi(seeded_db, "net_profit_margin_pct", n=5, year="2023-03")
         for r in result:
             assert r["year"] == "2023-03"
 

@@ -41,6 +41,7 @@ def _relation_exists(conn: sqlite3.Connection, name: str) -> bool:
 # 1. Company list
 # ------------------------------------------------------------------
 
+
 @st.cache_data(ttl=600)
 def get_companies() -> pd.DataFrame:
     """All Nifty-100 companies with sector info."""
@@ -66,6 +67,7 @@ def get_companies() -> pd.DataFrame:
 # ------------------------------------------------------------------
 # 2. Financial ratios (main analytical table — 30 columns)
 # ------------------------------------------------------------------
+
 
 @st.cache_data(ttl=600)
 def get_ratios(ticker: str, year: str | None = None) -> pd.DataFrame:
@@ -136,6 +138,7 @@ def get_ratios(ticker: str, year: str | None = None) -> pd.DataFrame:
 # 3-5. Raw financial statements
 # ------------------------------------------------------------------
 
+
 @st.cache_data(ttl=600)
 def get_pl(ticker: str) -> pd.DataFrame:
     """Income-statement rows for *ticker*, ordered by year."""
@@ -199,6 +202,7 @@ def get_cf(ticker: str) -> pd.DataFrame:
 # 6. Sector list (broad_sector with company counts)
 # ------------------------------------------------------------------
 
+
 @st.cache_data(ttl=600)
 def get_sectors() -> pd.DataFrame:
     """Distinct broad_sector values with company counts."""
@@ -235,11 +239,14 @@ def get_sectors() -> pd.DataFrame:
 # 7. Peer group data
 # ------------------------------------------------------------------
 
+
 @st.cache_data(ttl=600)
 def get_peers(group_name: str, year: str | None = None) -> pd.DataFrame:
     """All companies in a peer group, joined with financial_ratios."""
     conn = _get_conn()
-    if _relation_exists(conn, "financial_ratios") and _relation_exists(conn, "peer_groups"):
+    if _relation_exists(conn, "financial_ratios") and _relation_exists(
+        conn, "peer_groups"
+    ):
         query = """
             SELECT
                 fr.*,
@@ -263,6 +270,7 @@ def get_peers(group_name: str, year: str | None = None) -> pd.DataFrame:
 # ------------------------------------------------------------------
 # 8. Valuation (stub — populated on Day 26)
 # ------------------------------------------------------------------
+
 
 @st.cache_data(ttl=600)
 def get_valuation(ticker: str) -> pd.DataFrame:
@@ -288,6 +296,7 @@ def get_valuation(ticker: str) -> pd.DataFrame:
 # ------------------------------------------------------------------
 # 9. All ratios for one year (Home screen KPIs)
 # ------------------------------------------------------------------
+
 
 @st.cache_data(ttl=600)
 def get_all_ratios(year: str) -> pd.DataFrame:
@@ -349,6 +358,7 @@ def get_all_ratios(year: str) -> pd.DataFrame:
 # 10. Pros & cons
 # ------------------------------------------------------------------
 
+
 @st.cache_data(ttl=600)
 def get_pros_cons(ticker: str) -> pd.DataFrame:
     """Return pros/cons items for a company."""
@@ -380,6 +390,7 @@ def get_pros_cons(ticker: str) -> pd.DataFrame:
 
 
 # ── 11. Valuation (populated on Day 26) ────────────────────────────
+
 
 @st.cache_data(ttl=600)
 def get_all_valuations(year: str) -> pd.DataFrame:

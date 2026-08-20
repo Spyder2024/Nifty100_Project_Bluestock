@@ -18,8 +18,6 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from src.dashboard.utils.db import (  # noqa: E402
-    get_all_ratios,
-    get_companies,
     get_sectors,
 )
 from src.dashboard.utils.error_handler import (  # noqa: E402
@@ -35,6 +33,7 @@ st.set_page_config(page_title="Settings & QA", page_icon="⚙️", layout="wide"
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
+
 @st.cache_data(ttl=600)
 def _table_row_counts() -> dict[str, int]:
     """Row counts for every user-facing table."""
@@ -43,14 +42,17 @@ def _table_row_counts() -> dict[str, int]:
     conn = sqlite3.connect(str(DB_PATH))
     # ── Discover which tables actually exist ──────────────────────────
     existing = {
-        r[0] for r in
-        conn.execute(
+        r[0]
+        for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         ).fetchall()
     }
     wanted = [
-        "companies", "balance_sheet", "cash_flow",
-        "financial_ratios", "pros_cons",
+        "companies",
+        "balance_sheet",
+        "cash_flow",
+        "financial_ratios",
+        "pros_cons",
     ]
     counts: dict[str, int] = {}
     for t in wanted:
@@ -65,6 +67,7 @@ def _table_row_counts() -> dict[str, int]:
             counts[t] = -1
     conn.close()
     return counts
+
 
 @st.cache_data(ttl=600)
 def _db_size_mb() -> float:
@@ -114,9 +117,7 @@ with col_cache:
         st.cache_data.clear()
         st.success("All cached data cleared.  Refresh pages to reload.")
     st.divider()
-    st.markdown(
-        "You can also press **`C`** on any page to clear caches globally."
-    )
+    st.markdown("You can also press **`C`** on any page to clear caches globally.")
 
 with col_session:
     st.markdown("**Session State**")
@@ -134,8 +135,8 @@ if DB_PATH.exists():
     conn = sqlite3.connect(str(DB_PATH))
     # ── Discover actual table names, skip missing ones ────────────────
     _db_tables = [
-        r[0] for r in
-        conn.execute(
+        r[0]
+        for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
         ).fetchall()
     ]
@@ -143,9 +144,7 @@ if DB_PATH.exists():
     _wanted = ["financial_ratios", "balance_sheet", "cash_flow", "companies"]
     # If financial_ratios is missing, try a ratio-like alias
     if "financial_ratios" not in _db_tables:
-        _alias = next(
-            (t for t in _db_tables if "ratio" in t.lower()), None
-        )
+        _alias = next((t for t in _db_tables if "ratio" in t.lower()), None)
         if _alias:
             _wanted[_wanted.index("financial_ratios")] = _alias
 
@@ -205,11 +204,16 @@ if DB_PATH.exists():
     conn = sqlite3.connect(str(DB_PATH))
     year_data = []
     for table in ["balance_sheet", "cash_flow"]:
-        years = pd.read_sql(
-            f"SELECT DISTINCT year FROM {table} ORDER BY year", conn
-        )["year"].tolist()
+        years = pd.read_sql(f"SELECT DISTINCT year FROM {table} ORDER BY year", conn)[
+            "year"
+        ].tolist()
         year_data.append(
-            {"table": table, "min_year": min(years), "max_year": max(years), "count": len(years)}
+            {
+                "table": table,
+                "min_year": min(years),
+                "max_year": max(years),
+                "count": len(years),
+            }
         )
     conn.close()
 
@@ -230,7 +234,9 @@ else:
 st.subheader("DB Schema Reference")
 
 schema_df = safe_execute(_get_db_schema, component="Schema reader")
-if validate_dataframe(schema_df, required_cols=["table_name", "sql"], component="Schema"):
+if validate_dataframe(
+    schema_df, required_cols=["table_name", "sql"], component="Schema"
+):
     for _, row in schema_df.iterrows():
         with st.expander(f"📋 {row['table_name']}"):
             st.code(row["sql"], language="sql")
@@ -238,8 +244,7 @@ if validate_dataframe(schema_df, required_cols=["table_name", "sql"], component=
 # ── Row 6: Known gotchas reference ────────────────────────────────────────
 st.subheader("Known Gotchas (Dev Reference)")
 with st.expander("Click to expand"):
-    st.markdown(
-        """
+    st.markdown("""
 1. **PyArrow `None` ≠ NaN** — `.abs()` throws `TypeError` on `None`.
    Always chain `.fillna(0)` before `.abs()` or arithmetic ops.
 
@@ -255,5 +260,4 @@ with st.expander("Click to expand"):
 5. **Percentile method** — use average-rank:
    `(below + 0.5 * equal) / n * 100`.  Invert for D/E:
    `100 - percentile`.
-        """
-    )
+        """)

@@ -6,7 +6,7 @@ Sprint 6, Day 38
 from __future__ import annotations
 
 import sqlite3
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
 
@@ -25,8 +25,7 @@ async def list_valuations() -> Dict[str, Any]:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     try:
-        rows = conn.execute(
-            """
+        rows = conn.execute("""
             SELECT v.company_id, c.company_name, s.sector_name,
                    v.graham_number, v.dcf_intrinsic_value, v.ddm_intrinsic_value,
                    v.relative_avg_value, v.growth_rate_used, v.wacc_used
@@ -34,8 +33,7 @@ async def list_valuations() -> Dict[str, Any]:
             LEFT JOIN companies c ON v.company_id = c.company_id
             LEFT JOIN sectors s ON c.sector_id = s.sector_id
             ORDER BY v.company_id ASC
-            """
-        ).fetchall()
+            """).fetchall()
 
         items = [dict(row) for row in rows]
         return {
@@ -69,7 +67,9 @@ async def get_company_valuation(company_id: str) -> Dict[str, Any]:
         ).fetchone()
 
         if not val:
-            raise HTTPException(status_code=404, detail=f"Valuation data for '{company_id}' not found")
+            raise HTTPException(
+                status_code=404, detail=f"Valuation data for '{company_id}' not found"
+            )
 
         return {"valuation": dict(val)}
     finally:

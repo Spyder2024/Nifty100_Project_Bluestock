@@ -8,8 +8,6 @@ Verifies:
 3. Database performance indexes exist and are actively recognized by SQLite.
 """
 
-from pathlib import Path
-import pytest
 from src.analytics.optimize_db import verify_database_indexes
 from src.analytics.perf_benchmark import (
     run_concurrent_screener_load_test,
@@ -45,5 +43,11 @@ def test_sqlite_performance_indexes_active():
 
     # Key indexed tables
     indexed_tables = set(indexes.values())
-    for expected_table in ["ratios", "income_statement", "balance_sheet", "cash_flow", "companies"]:
+    for expected_table in [
+        "ratios",
+        "income_statement",
+        "balance_sheet",
+        "cash_flow",
+        "companies",
+    ]:
         assert expected_table in indexed_tables

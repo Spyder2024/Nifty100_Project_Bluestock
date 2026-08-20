@@ -16,7 +16,6 @@ Tests:
 """
 
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 
@@ -52,7 +51,10 @@ def test_get_company_profile_tcs():
 
 def test_get_company_profile_not_found():
     """Verify GET /companies/INVALID returns HTTP 404."""
-    for path in ["/api/v1/companies/INVALID_TICKER_XYZ", "/companies/INVALID_TICKER_XYZ"]:
+    for path in [
+        "/api/v1/companies/INVALID_TICKER_XYZ",
+        "/companies/INVALID_TICKER_XYZ",
+    ]:
         resp = client.get(path)
         assert resp.status_code == 404
         assert "not found" in resp.json()["detail"].lower()

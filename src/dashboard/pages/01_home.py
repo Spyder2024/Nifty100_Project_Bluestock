@@ -1,7 +1,9 @@
 """Home screen — KPI tiles, sector donut, top-5 quality table."""
 
 from __future__ import annotations
-from pathlib import Path; import sys
+from pathlib import Path
+import sys
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 import streamlit as st
 import pandas as pd
@@ -46,7 +48,10 @@ with row1[2]:
 with row2[0]:
     st.metric("Total Companies", total_cos)
 with row2[1]:
-    st.metric("Median Revenue CAGR 5Y", f"{med_rev_cagr:.1f}%" if pd.notna(med_rev_cagr) else "N/A")
+    st.metric(
+        "Median Revenue CAGR 5Y",
+        f"{med_rev_cagr:.1f}%" if pd.notna(med_rev_cagr) else "N/A",
+    )
 with row2[2]:
     st.metric("Debt-Free Companies", debt_free)
 
@@ -78,9 +83,9 @@ if scored.empty:
     st.info("No composite scores available for this year.")
 else:
     top5 = scored.nlargest(5, "composite_quality_score")
-    display = top5[
-        ["company_name", "broad_sector", "composite_quality_score"]
-    ].copy()
+    display = top5[["company_name", "broad_sector", "composite_quality_score"]].copy()
     display["composite_quality_score"] = display["composite_quality_score"].round(1)
     display.columns = ["Company", "Sector", "Score"]
-    st.dataframe(display.reset_index(drop=True), hide_index=True, use_container_width=True)
+    st.dataframe(
+        display.reset_index(drop=True), hide_index=True, use_container_width=True
+    )

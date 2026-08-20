@@ -4,7 +4,9 @@ Run with:
     streamlit run src/dashboard/app.py
 """
 
-from pathlib import Path; import sys
+from pathlib import Path
+import sys
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
@@ -15,8 +17,7 @@ st.set_page_config(
 )
 
 st.title("Nifty 100 Financial Intelligence Platform")
-st.markdown(
-    """
+st.markdown("""
     Welcome! Use the **sidebar navigation** to explore the 8 screens.
 
     | Screen | Description |
@@ -29,5 +30,4 @@ st.markdown(
     | Sector Analysis | Bubble chart & median KPIs by sector |
     | Capital Allocation | Treemap of 8 capital-allocation patterns |
     | Annual Reports | BSE annual-report PDF links |
-    """
-)
+    """)

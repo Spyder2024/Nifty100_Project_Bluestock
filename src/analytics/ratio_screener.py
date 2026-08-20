@@ -10,9 +10,7 @@ import sqlite3
 from typing import Optional
 
 
-def _fetch_dict(
-    conn: sqlite3.Connection, query: str, params: tuple = ()
-) -> list[dict]:
+def _fetch_dict(conn: sqlite3.Connection, query: str, params: tuple = ()) -> list[dict]:
     """Execute query and return list of row-dicts."""
     cursor = conn.execute(query, params)
     cols = [d[0] for d in cursor.description]
@@ -22,6 +20,7 @@ def _fetch_dict(
 # ------------------------------------------------------------------
 # Screener functions
 # ------------------------------------------------------------------
+
 
 def screen_debt_free(
     conn: sqlite3.Connection,
@@ -164,8 +163,7 @@ def top_n_by_kpi(
     }
     if kpi_column not in allowed:
         raise ValueError(
-            f"Invalid KPI column: {kpi_column}. "
-            f"Allowed: {sorted(allowed)}"
+            f"Invalid KPI column: {kpi_column}. " f"Allowed: {sorted(allowed)}"
         )
 
     order = "ASC" if ascending else "DESC"
@@ -246,16 +244,16 @@ def get_sector_stats(
 
 def ratio_summary(conn: sqlite3.Connection) -> dict:
     """High-level summary of the financial_ratios table."""
-    total = _fetch_dict(
-        conn, "SELECT COUNT(*) as cnt FROM financial_ratios"
-    )
+    total = _fetch_dict(conn, "SELECT COUNT(*) as cnt FROM financial_ratios")
     companies = _fetch_dict(
         conn, "SELECT COUNT(DISTINCT company_id) as cnt FROM financial_ratios"
     )
     years = _fetch_dict(
         conn, "SELECT COUNT(DISTINCT year) as cnt FROM financial_ratios"
     )
-    nulls = _fetch_dict(conn, """
+    nulls = _fetch_dict(
+        conn,
+        """
         SELECT
             SUM(CASE WHEN net_profit_margin_pct IS NULL THEN 1 ELSE 0 END)
                 AS npm_nulls,
@@ -268,13 +266,17 @@ def ratio_summary(conn: sqlite3.Connection) -> dict:
             SUM(CASE WHEN composite_quality_score IS NULL THEN 1 ELSE 0 END)
                 AS qs_nulls
         FROM financial_ratios
-    """)
-    top_q = _fetch_dict(conn, """
+    """,
+    )
+    top_q = _fetch_dict(
+        conn,
+        """
         SELECT company_id, year, composite_quality_score
         FROM financial_ratios
         WHERE composite_quality_score IS NOT NULL
         ORDER BY composite_quality_score DESC LIMIT 5
-    """)
+    """,
+    )
     return {
         "total_rows": total[0]["cnt"] if total else 0,
         "distinct_companies": companies[0]["cnt"] if companies else 0,

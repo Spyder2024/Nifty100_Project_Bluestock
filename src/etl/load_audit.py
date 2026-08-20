@@ -55,6 +55,7 @@ AUDIT_COLUMNS = [
 # Helpers
 # ------------------------------------------------------------------
 
+
 def _audit_status(rows_loaded: int, total_rows: int, error_msg: str) -> str:
     if error_msg:
         return "FAILED"
@@ -78,6 +79,7 @@ def _write_audit_csv(records: list[dict], output_path: str) -> None:
 # FK Integrity
 # ------------------------------------------------------------------
 
+
 def check_fk_integrity(conn: sqlite3.Connection) -> list[dict]:
     results: list[dict] = []
 
@@ -86,26 +88,40 @@ def check_fk_integrity(conn: sqlite3.Connection) -> list[dict]:
         LEFT JOIN sectors s ON c.sector_id = s.sector_id
         WHERE c.sector_id IS NOT NULL AND s.sector_id IS NULL
     """).fetchone()[0]
-    results.append(dict(
-        fk_table="companies", fk_column="sector_id",
-        ref_table="sectors", ref_column="sector_id",
-        orphan_count=orphans,
-    ))
+    results.append(
+        dict(
+            fk_table="companies",
+            fk_column="sector_id",
+            ref_table="sectors",
+            ref_column="sector_id",
+            orphan_count=orphans,
+        )
+    )
 
     for tbl in [
-        "balance_sheet", "income_statement", "cash_flow",
-        "ratios", "prices", "market_cap", "shareholding", "dividends",
+        "balance_sheet",
+        "income_statement",
+        "cash_flow",
+        "ratios",
+        "prices",
+        "market_cap",
+        "shareholding",
+        "dividends",
     ]:
         orphans = conn.execute(f"""
             SELECT COUNT(*) FROM {tbl} t
             LEFT JOIN companies c ON t.company_id = c.company_id
             WHERE c.company_id IS NULL
         """).fetchone()[0]
-        results.append(dict(
-            fk_table=tbl, fk_column="company_id",
-            ref_table="companies", ref_column="company_id",
-            orphan_count=orphans,
-        ))
+        results.append(
+            dict(
+                fk_table=tbl,
+                fk_column="company_id",
+                ref_table="companies",
+                ref_column="company_id",
+                orphan_count=orphans,
+            )
+        )
 
     return results
 
@@ -113,6 +129,7 @@ def check_fk_integrity(conn: sqlite3.Connection) -> list[dict]:
 # ------------------------------------------------------------------
 # Row counts
 # ------------------------------------------------------------------
+
 
 def get_table_row_counts(conn: sqlite3.Connection) -> dict[str, int]:
     tables = [
@@ -136,6 +153,7 @@ def get_table_row_counts(conn: sqlite3.Connection) -> dict[str, int]:
 # ------------------------------------------------------------------
 # Single-table load wrapper (captures audit metadata)
 # ------------------------------------------------------------------
+
 
 def _load_one_table(
     conn: sqlite3.Connection,
@@ -194,6 +212,7 @@ def _load_one_table(
 # Orchestrator
 # ------------------------------------------------------------------
 
+
 def run_load_with_audit(
     db_path: str,
     audit_path: str,
@@ -232,43 +251,53 @@ def run_load_with_audit(
 
     # ---- 3. Core financial tables ----
     for file_name, table_name in [
-        ("balancesheet",   "balance_sheet"),
-        ("profitandloss",  "income_statement"),
-        ("cashflow",       "cash_flow"),
+        ("balancesheet", "balance_sheet"),
+        ("profitandloss", "income_statement"),
+        ("cashflow", "cash_flow"),
     ]:
         audit_records.append(
             _load_one_table(
-                conn, file_name, table_name, "core",
-                None, FINANCIAL_TABLES[table_name],
+                conn,
+                file_name,
+                table_name,
+                "core",
+                None,
+                FINANCIAL_TABLES[table_name],
             )
         )
 
     # ---- 4. Supporting data tables ----
     for file_name, table_name in [
         ("financial_ratios", "ratios"),
-        ("stock_prices",    "prices"),
-        ("market_cap",      "market_cap"),
+        ("stock_prices", "prices"),
+        ("market_cap", "market_cap"),
     ]:
         audit_records.append(
             _load_one_table(
-                conn, file_name, table_name, "supporting",
-                None, FINANCIAL_TABLES[table_name],
+                conn,
+                file_name,
+                table_name,
+                "supporting",
+                None,
+                FINANCIAL_TABLES[table_name],
             )
         )
 
     # ---- 5. Tables with NO source file (SKIPPED) ----
     for table_name in ["shareholding", "dividends"]:
-        audit_records.append(dict(
-            table_name=table_name,
-            source_file="N/A",
-            source_type="none",
-            rows_loaded=0,
-            rows_skipped=0,
-            total_rows_in_source=0,
-            load_status="SKIPPED",
-            error_message="No matching source file in data/",
-            load_timestamp=ts,
-        ))
+        audit_records.append(
+            dict(
+                table_name=table_name,
+                source_file="N/A",
+                source_type="none",
+                rows_loaded=0,
+                rows_skipped=0,
+                total_rows_in_source=0,
+                load_status="SKIPPED",
+                error_message="No matching source file in data/",
+                load_timestamp=ts,
+            )
+        )
 
     # ---- 6. FK integrity check ----
     fk_results = check_fk_integrity(conn)

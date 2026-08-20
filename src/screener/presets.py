@@ -55,9 +55,7 @@ def get_latest_year(df: pd.DataFrame) -> pd.DataFrame:
         return df.copy()
 
     # Sort by year descending (string sort works for '2024' format)
-    sorted_df = df.sort_values(
-        ["company_id", "year"], ascending=[True, False]
-    )
+    sorted_df = df.sort_values(["company_id", "year"], ascending=[True, False])
     latest = sorted_df.drop_duplicates(subset="company_id", keep="first")
     return latest.reset_index(drop=True)
 
@@ -70,9 +68,7 @@ def get_previous_year(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df.copy()
 
-    sorted_df = df.sort_values(
-        ["company_id", "year"], ascending=[True, False]
-    )
+    sorted_df = df.sort_values(["company_id", "year"], ascending=[True, False])
     # Keep the 2nd row per company (index 1 after groupby)
     previous = sorted_df.groupby("company_id").nth(1).reset_index(drop=True)
     return previous
@@ -94,9 +90,7 @@ def _get_de_declining_company_ids(df: pd.DataFrame) -> set:
     if df.empty or "debt_to_equity" not in df.columns:
         return set()
 
-    sorted_df = df.sort_values(
-        ["company_id", "year"], ascending=[True, False]
-    )
+    sorted_df = df.sort_values(["company_id", "year"], ascending=[True, False])
 
     declining = set()
 
@@ -106,7 +100,7 @@ def _get_de_declining_company_ids(df: pd.DataFrame) -> set:
 
         de_values = group["debt_to_equity"].tolist()
         de_latest = de_values[0]  # sorted desc, so index 0 is latest
-        de_prev = de_values[1]    # index 1 is previous
+        de_prev = de_values[1]  # index 1 is previous
 
         # Skip if either is NaN
         if pd.isna(de_latest) and pd.isna(de_prev):

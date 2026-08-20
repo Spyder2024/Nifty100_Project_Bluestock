@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker_fmt
@@ -49,7 +50,6 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     Image,
-    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -58,7 +58,9 @@ from reportlab.platypus import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 # ── project root resolution ───────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -88,6 +90,7 @@ AMBER = colors.HexColor("#D97706")
 # Numbered Canvas for Sector Reports
 # ===========================================================================
 
+
 class SectorNumberedCanvas(canvas.Canvas):
     """Canvas that prints dynamic 'Page X of Y' on sector reports."""
 
@@ -113,7 +116,9 @@ class SectorNumberedCanvas(canvas.Canvas):
         self.setFillColor(colors.HexColor("#94A3B8"))
 
         # Footer
-        footer_text = "Nifty 100 Sector Intelligence Report  |  Confidential & Proprietary"
+        footer_text = (
+            "Nifty 100 Sector Intelligence Report  |  Confidential & Proprietary"
+        )
         self.drawString(25, 14, footer_text)
         page_num_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(A4[0] - 25, 14, page_num_str)
@@ -129,6 +134,7 @@ class SectorNumberedCanvas(canvas.Canvas):
 # ===========================================================================
 # Sector Data Extraction
 # ===========================================================================
+
 
 def _format_cr(val: Optional[float]) -> str:
     if val is None or pd.isna(val):
@@ -184,8 +190,14 @@ def get_sector_data(sector_id: str, db_path: Path = DEFAULT_DB_PATH) -> dict[str
         """
         co_rows = conn.execute(query_co).fetchall()
     else:
-        sec_row = conn.execute("SELECT * FROM sectors WHERE sector_id = ?", (sector_id,)).fetchone()
-        sector_name = sec_row["sector_name"] if sec_row and "sector_name" in sec_row.keys() else sector_id.replace("_", " ").title()
+        sec_row = conn.execute(
+            "SELECT * FROM sectors WHERE sector_id = ?", (sector_id,)
+        ).fetchone()
+        sector_name = (
+            sec_row["sector_name"]
+            if sec_row and "sector_name" in sec_row.keys()
+            else sector_id.replace("_", " ").title()
+        )
         query_co = """
             SELECT c.company_id, c.company_name, c.sector_id, s.sector_name
             FROM companies c
@@ -220,30 +232,50 @@ def get_sector_data(sector_id: str, db_path: Path = DEFAULT_DB_PATH) -> dict[str
 
         rev = is_row["revenue"] if is_row and "revenue" in is_row.keys() else None
         pat = is_row["net_income"] if is_row and "net_income" in is_row.keys() else None
-        opm = r_row["opm"] if r_row and "opm" in r_row.keys() and r_row["opm"] is not None else (
-            is_row["opm"] if is_row and "opm" in is_row.keys() else None
+        opm = (
+            r_row["opm"]
+            if r_row and "opm" in r_row.keys() and r_row["opm"] is not None
+            else (is_row["opm"] if is_row and "opm" in is_row.keys() else None)
         )
         roe = r_row["roe"] if r_row and "roe" in r_row.keys() else None
         roce = r_row["roce"] if r_row and "roce" in r_row.keys() else None
-        de = r_row["debt_to_equity"] if r_row and "debt_to_equity" in r_row.keys() else None
-        pe = r_row["price_to_earnings"] if r_row and "price_to_earnings" in r_row.keys() else None
-        npm = r_row["net_profit_margin"] if r_row and "net_profit_margin" in r_row.keys() else None
-        cfo = cf_row["operating_cf"] if cf_row and "operating_cf" in cf_row.keys() else None
+        de = (
+            r_row["debt_to_equity"]
+            if r_row and "debt_to_equity" in r_row.keys()
+            else None
+        )
+        pe = (
+            r_row["price_to_earnings"]
+            if r_row and "price_to_earnings" in r_row.keys()
+            else None
+        )
+        npm = (
+            r_row["net_profit_margin"]
+            if r_row and "net_profit_margin" in r_row.keys()
+            else None
+        )
+        cfo = (
+            cf_row["operating_cf"]
+            if cf_row and "operating_cf" in cf_row.keys()
+            else None
+        )
 
-        constituents.append({
-            "company_id": cid,
-            "company_name": cname,
-            "sector_id": r["sector_id"],
-            "revenue": rev,
-            "net_profit": pat,
-            "opm": opm,
-            "npm": npm,
-            "roe": roe,
-            "roce": roce,
-            "de": de,
-            "pe": pe,
-            "cfo": cfo,
-        })
+        constituents.append(
+            {
+                "company_id": cid,
+                "company_name": cname,
+                "sector_id": r["sector_id"],
+                "revenue": rev,
+                "net_profit": pat,
+                "opm": opm,
+                "npm": npm,
+                "roe": roe,
+                "roce": roce,
+                "de": de,
+                "pe": pe,
+                "cfo": cfo,
+            }
+        )
 
     conn.close()
 
@@ -280,26 +312,45 @@ def get_sector_data(sector_id: str, db_path: Path = DEFAULT_DB_PATH) -> dict[str
 # Matplotlib Sector Charts
 # ===========================================================================
 
-def render_sector_distribution_chart(df_const: pd.DataFrame, is_overview: bool = False, width_in=7.3, height_in=2.5, dpi=180) -> io.BytesIO:
+
+def render_sector_distribution_chart(
+    df_const: pd.DataFrame,
+    is_overview: bool = False,
+    width_in=7.3,
+    height_in=2.5,
+    dpi=180,
+) -> io.BytesIO:
     """Render revenue distribution or top constituent contribution chart."""
     fig, ax = plt.subplots(figsize=(width_in, height_in), dpi=dpi)
     fig.patch.set_facecolor("#FFFFFF")
     ax.set_facecolor("#FAFAFC")
 
     if df_const.empty or "revenue" not in df_const.columns:
-        ax.text(0.5, 0.5, "Sector Chart Data Unavailable", ha="center", va="center", color="#64748B", fontsize=10)
+        ax.text(
+            0.5,
+            0.5,
+            "Sector Chart Data Unavailable",
+            ha="center",
+            va="center",
+            color="#64748B",
+            fontsize=10,
+        )
         ax.axis("off")
     else:
         # Sort by revenue descending
-        df_sorted = df_const.dropna(subset=["revenue"]).sort_values("revenue", ascending=False).copy()
-        
+        df_sorted = (
+            df_const.dropna(subset=["revenue"])
+            .sort_values("revenue", ascending=False)
+            .copy()
+        )
+
         if is_overview:
             # Top 10 across Nifty 100
             plot_df = df_sorted.head(10)
             title = "Top 10 Constituents by Revenue (₹ Cr) — Nifty 100"
         else:
             plot_df = df_sorted.head(8)
-            title = f"Top Sector Constituents by Revenue (₹ Cr)"
+            title = "Top Sector Constituents by Revenue (₹ Cr)"
 
         tickers = plot_df["company_id"].tolist()
         revs = plot_df["revenue"].tolist()
@@ -323,8 +374,12 @@ def render_sector_distribution_chart(df_const: pd.DataFrame, is_overview: bool =
             )
 
         ax.set_xticks(x)
-        ax.set_xticklabels(tickers, fontsize=8, fontweight="bold", color="#334155", rotation=0)
-        ax.yaxis.set_major_formatter(ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}"))
+        ax.set_xticklabels(
+            tickers, fontsize=8, fontweight="bold", color="#334155", rotation=0
+        )
+        ax.yaxis.set_major_formatter(
+            ticker_fmt.FuncFormatter(lambda y, _: f"₹{y:,.0f}")
+        )
         ax.tick_params(axis="y", labelsize=7.5, colors="#475569")
         ax.tick_params(axis="x", colors="#475569")
 
@@ -348,6 +403,7 @@ def render_sector_distribution_chart(df_const: pd.DataFrame, is_overview: bool =
 # ReportLab Sector PDF Builder
 # ===========================================================================
 
+
 def build_sector_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
     """Compile a professional sector benchmark PDF report."""
     output_pdf_path.parent.mkdir(parents=True, exist_ok=True)
@@ -361,18 +417,64 @@ def build_sector_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
         bottomMargin=30,
     )
 
-    styles = getSampleStyleSheet()
+    getSampleStyleSheet()
 
-    style_header_left = ParagraphStyle("SecHL", fontName="Helvetica", textColor=WHITE, leading=14)
-    style_header_right = ParagraphStyle("SecHR", fontName="Helvetica", textColor=WHITE, alignment=2, leading=10)
+    style_header_left = ParagraphStyle(
+        "SecHL", fontName="Helvetica", textColor=WHITE, leading=14
+    )
+    style_header_right = ParagraphStyle(
+        "SecHR", fontName="Helvetica", textColor=WHITE, alignment=2, leading=10
+    )
 
-    style_kpi_title = ParagraphStyle("SecKPIT", fontName="Helvetica", fontSize=7, leading=8, textColor=SLATE_GREY, alignment=1)
-    style_kpi_val = ParagraphStyle("SecKPIV", fontName="Helvetica-Bold", fontSize=10, leading=12, textColor=NAVY, alignment=1)
-    style_kpi_sub = ParagraphStyle("SecKPIS", fontName="Helvetica", fontSize=6.5, leading=8, textColor=ACCENT_BLUE, alignment=1)
+    style_kpi_title = ParagraphStyle(
+        "SecKPIT",
+        fontName="Helvetica",
+        fontSize=7,
+        leading=8,
+        textColor=SLATE_GREY,
+        alignment=1,
+    )
+    style_kpi_val = ParagraphStyle(
+        "SecKPIV",
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=12,
+        textColor=NAVY,
+        alignment=1,
+    )
+    style_kpi_sub = ParagraphStyle(
+        "SecKPIS",
+        fontName="Helvetica",
+        fontSize=6.5,
+        leading=8,
+        textColor=ACCENT_BLUE,
+        alignment=1,
+    )
 
-    style_th = ParagraphStyle("SecTH", fontName="Helvetica-Bold", fontSize=7, leading=9, textColor=WHITE, alignment=1)
-    style_td = ParagraphStyle("SecTD", fontName="Helvetica", fontSize=6.5, leading=8, textColor=NAVY, alignment=1)
-    style_td_name = ParagraphStyle("SecTDName", fontName="Helvetica-Bold", fontSize=6.5, leading=8, textColor=NAVY, alignment=0)
+    style_th = ParagraphStyle(
+        "SecTH",
+        fontName="Helvetica-Bold",
+        fontSize=7,
+        leading=9,
+        textColor=WHITE,
+        alignment=1,
+    )
+    style_td = ParagraphStyle(
+        "SecTD",
+        fontName="Helvetica",
+        fontSize=6.5,
+        leading=8,
+        textColor=NAVY,
+        alignment=1,
+    )
+    style_td_name = ParagraphStyle(
+        "SecTDName",
+        fontName="Helvetica-Bold",
+        fontSize=6.5,
+        leading=8,
+        textColor=NAVY,
+        alignment=0,
+    )
 
     story = []
     page_width = A4[0] - 50  # 545.27 pt
@@ -389,15 +491,21 @@ def build_sector_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
         f"<font size=7 color='#38BDF8'>{datetime.now().strftime('%B %Y')}</font>",
         style_header_right,
     )
-    header_table = Table([[header_left, header_right]], colWidths=[page_width * 0.75, page_width * 0.25])
-    header_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
+    header_table = Table(
+        [[header_left, header_right]], colWidths=[page_width * 0.75, page_width * 0.25]
+    )
+    header_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), NAVY),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
     story.append(header_table)
     story.append(Spacer(1, 8))
 
@@ -414,34 +522,59 @@ def build_sector_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
     w4 = page_width / 4.0
     kpi_matrix = [
         [
-            _make_kpi_tile("Median ROE", _format_pct(data["med_roe"]), "Sector Target > 15%"),
-            _make_kpi_tile("Median ROCE", _format_pct(data["med_roce"]), "Capital Efficiency"),
-            _make_kpi_tile("Median OPM", _format_pct(data["med_opm"]), "Operating Margin"),
-            _make_kpi_tile("Median Net Margin", _format_pct(data["med_npm"]), "PAT Margin"),
+            _make_kpi_tile(
+                "Median ROE", _format_pct(data["med_roe"]), "Sector Target > 15%"
+            ),
+            _make_kpi_tile(
+                "Median ROCE", _format_pct(data["med_roce"]), "Capital Efficiency"
+            ),
+            _make_kpi_tile(
+                "Median OPM", _format_pct(data["med_opm"]), "Operating Margin"
+            ),
+            _make_kpi_tile(
+                "Median Net Margin", _format_pct(data["med_npm"]), "PAT Margin"
+            ),
         ],
         [
-            _make_kpi_tile("Median D/E", _format_num(data["med_de"], "x"), "Sector Leverage"),
-            _make_kpi_tile("Median P/E", _format_num(data["med_pe"], "x"), "Valuation Multiple"),
-            _make_kpi_tile("Total Revenue", _format_cr(data["total_rev"]), "Combined Sales"),
-            _make_kpi_tile("Total Net Profit", _format_cr(data["total_pat"]), "Combined Earnings"),
+            _make_kpi_tile(
+                "Median D/E", _format_num(data["med_de"], "x"), "Sector Leverage"
+            ),
+            _make_kpi_tile(
+                "Median P/E", _format_num(data["med_pe"], "x"), "Valuation Multiple"
+            ),
+            _make_kpi_tile(
+                "Total Revenue", _format_cr(data["total_rev"]), "Combined Sales"
+            ),
+            _make_kpi_tile(
+                "Total Net Profit", _format_cr(data["total_pat"]), "Combined Earnings"
+            ),
         ],
     ]
     kpi_grid = Table(kpi_matrix, colWidths=[w4, w4, w4, w4])
-    kpi_grid.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BG),
-        ("BOX", (0, 0), (-1, -1), 1, BORDER_COLOR),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-    ]))
+    kpi_grid.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BG),
+                ("BOX", (0, 0), (-1, -1), 1, BORDER_COLOR),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
     story.append(kpi_grid)
     story.append(Spacer(1, 8))
 
     # 3. Revenue Contribution Chart
-    chart_buf = render_sector_distribution_chart(data["constituents"], is_overview=data["is_overview"], width_in=7.3, height_in=2.2)
+    chart_buf = render_sector_distribution_chart(
+        data["constituents"],
+        is_overview=data["is_overview"],
+        width_in=7.3,
+        height_in=2.2,
+    )
     story.append(Image(chart_buf, width=page_width, height=140))
     story.append(Spacer(1, 8))
 
@@ -476,20 +609,22 @@ def build_sector_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
     df_const = data["constituents"]
     for idx, row in df_const.iterrows():
         co_label = f"<b>{row['company_id']}</b><br/><font color='#64748B' size=5.5>{row['company_name'][:20]}</font>"
-        table_data.append([
-            Paragraph(co_label, style_td_name),
-            Paragraph(_format_cr(row["revenue"]), style_td),
-            Paragraph(_format_cr(row["net_profit"]), style_td),
-            Paragraph(_format_pct(row["opm"]), style_td),
-            Paragraph(_format_pct(row["roe"]), style_td),
-            Paragraph(_format_pct(row["roce"]), style_td),
-            Paragraph(_format_num(row["de"], "x"), style_td),
-            Paragraph(_format_num(row["pe"], "x"), style_td),
-            Paragraph(_format_cr(row["cfo"]), style_td),
-        ])
+        table_data.append(
+            [
+                Paragraph(co_label, style_td_name),
+                Paragraph(_format_cr(row["revenue"]), style_td),
+                Paragraph(_format_cr(row["net_profit"]), style_td),
+                Paragraph(_format_pct(row["opm"]), style_td),
+                Paragraph(_format_pct(row["roe"]), style_td),
+                Paragraph(_format_pct(row["roce"]), style_td),
+                Paragraph(_format_num(row["de"], "x"), style_td),
+                Paragraph(_format_num(row["pe"], "x"), style_td),
+                Paragraph(_format_cr(row["cfo"]), style_td),
+            ]
+        )
 
     constituent_table = Table(table_data, colWidths=col_widths, repeatRows=1)
-    
+
     table_styles = [
         ("BACKGROUND", (0, 0), (-1, 0), NAVY_LIGHT),
         ("BOX", (0, 0), (-1, -1), 1, BORDER_COLOR),
@@ -510,7 +645,9 @@ def build_sector_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
 
     # Build Document with SectorNumberedCanvas
     doc.build(story, canvasmaker=SectorNumberedCanvas)
-    logger.info("Generated Sector Report for %s → %s", data["sector_id"], output_pdf_path)
+    logger.info(
+        "Generated Sector Report for %s → %s", data["sector_id"], output_pdf_path
+    )
     return output_pdf_path
 
 
@@ -518,7 +655,12 @@ def build_sector_pdf(data: dict[str, Any], output_pdf_path: Path) -> Path:
 # Public API & Batch Runner
 # ===========================================================================
 
-def generate_sector_report(sector_id: str, output_dir: Path = DEFAULT_OUTPUT_DIR, db_path: Path = DEFAULT_DB_PATH) -> Path:
+
+def generate_sector_report(
+    sector_id: str,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> Path:
     """Generate a single sector report PDF."""
     output_dir.mkdir(parents=True, exist_ok=True)
     clean_sec = sector_id.strip().upper()
@@ -527,7 +669,9 @@ def generate_sector_report(sector_id: str, output_dir: Path = DEFAULT_OUTPUT_DIR
     return build_sector_pdf(data, out_pdf)
 
 
-def generate_all_sector_reports(output_dir: Path = DEFAULT_OUTPUT_DIR, db_path: Path = DEFAULT_DB_PATH) -> list[Path]:
+def generate_all_sector_reports(
+    output_dir: Path = DEFAULT_OUTPUT_DIR, db_path: Path = DEFAULT_DB_PATH
+) -> list[Path]:
     """Generate all 11 Sector Benchmark Reports (10 Sectors + 1 All-Sectors Overview)."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -543,7 +687,9 @@ def generate_all_sector_reports(output_dir: Path = DEFAULT_OUTPUT_DIR, db_path: 
     generated: list[Path] = []
     for sec in sector_ids:
         try:
-            pdf_path = generate_sector_report(sec, output_dir=output_dir, db_path=db_path)
+            pdf_path = generate_sector_report(
+                sec, output_dir=output_dir, db_path=db_path
+            )
             generated.append(pdf_path)
         except Exception as exc:
             logger.error("Failed generating sector report for %s: %s", sec, exc)
@@ -552,7 +698,9 @@ def generate_all_sector_reports(output_dir: Path = DEFAULT_OUTPUT_DIR, db_path: 
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Sector Benchmark Reports using ReportLab.")
+    parser = argparse.ArgumentParser(
+        description="Generate Sector Benchmark Reports using ReportLab."
+    )
     parser.add_argument(
         "--sectors",
         nargs="+",
@@ -579,7 +727,9 @@ def main():
     else:
         results = generate_all_sector_reports(output_dir=out_dir)
 
-    print(f"\n[SUMMARY] Successfully generated {len(results)} sector reports in {out_dir}")
+    print(
+        f"\n[SUMMARY] Successfully generated {len(results)} sector reports in {out_dir}"
+    )
     for p in results:
         print(f"  • {p.name}")
 

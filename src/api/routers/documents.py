@@ -6,9 +6,9 @@ Sprint 6, Day 38
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 router = APIRouter(prefix="/documents", tags=["Documents & Reports"])
 
@@ -32,7 +32,11 @@ async def list_documents() -> Dict[str, Any]:
             "portfolio_reports_count": len(portfolio_reports),
             "charts_count": len(chart_images),
         },
-        "portfolio_summary_available": (reports_dir / "portfolio" / "portfolio_summary.pdf").exists(),
+        "portfolio_summary_available": (
+            reports_dir / "portfolio" / "portfolio_summary.pdf"
+        ).exists(),
         "elbow_plot_available": (reports_dir / "elbow_plot.png").exists(),
-        "correlation_heatmap_available": (reports_dir / "correlation_heatmap.png").exists(),
+        "correlation_heatmap_available": (
+            reports_dir / "correlation_heatmap.png"
+        ).exists(),
     }

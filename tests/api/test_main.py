@@ -9,7 +9,6 @@ Tests:
 """
 
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 
@@ -50,7 +49,10 @@ def test_cors_headers():
         },
     )
     assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") in ["*", "http://localhost:3000"]
+    assert response.headers.get("access-control-allow-origin") in [
+        "*",
+        "http://localhost:3000",
+    ]
     assert response.headers.get("access-control-allow-credentials") == "true"
 
 
@@ -80,4 +82,6 @@ def test_all_routers_mounted():
 
     for path, expected_status in routes_to_test:
         resp = client.get(path)
-        assert resp.status_code == expected_status, f"Route {path} failed with status {resp.status_code}"
+        assert (
+            resp.status_code == expected_status
+        ), f"Route {path} failed with status {resp.status_code}"

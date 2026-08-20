@@ -7,21 +7,21 @@ from typing import Protocol
 
 import pandas as pd
 
-
 # ---------------------------------------------------------------------------
 # Protocol
 # ---------------------------------------------------------------------------
 
+
 class DQRule(Protocol):
     """A callable that returns a list of bad-row integer indices."""
 
-    def __call__(self, df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
-        ...
+    def __call__(self, df: pd.DataFrame, sector_col: str = "sector") -> list[int]: ...
 
 
 # ---------------------------------------------------------------------------
 # Individual rules
 # ---------------------------------------------------------------------------
+
 
 def check_no_negative_market_cap(
     df: pd.DataFrame, sector_col: str = "sector"
@@ -44,9 +44,7 @@ def check_no_negative_revenue(
     return df[mask].index.tolist()
 
 
-def check_roe_range(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_roe_range(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where return_on_equity is outside [-100, 500]."""
     col = "return_on_equity"
     if col not in df.columns:
@@ -55,9 +53,7 @@ def check_roe_range(
     return df[mask].index.tolist()
 
 
-def check_roce_range(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_roce_range(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where return_on_capital_employed is outside [-100, 500]."""
     col = "return_on_capital_employed"
     if col not in df.columns:
@@ -66,9 +62,7 @@ def check_roce_range(
     return df[mask].index.tolist()
 
 
-def check_de_non_negative(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_de_non_negative(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where debt_to_equity is negative."""
     col = "debt_to_equity"
     if col not in df.columns:
@@ -77,9 +71,7 @@ def check_de_non_negative(
     return df[mask].index.tolist()
 
 
-def check_icr_non_negative(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_icr_non_negative(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where interest_coverage_ratio is negative."""
     col = "interest_coverage_ratio"
     if col not in df.columns:
@@ -88,9 +80,7 @@ def check_icr_non_negative(
     return df[mask].index.tolist()
 
 
-def check_cfo_quality_range(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_cfo_quality_range(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where cfo_quality_score is outside [0, 2]."""
     col = "cfo_quality_score"
     if col not in df.columns:
@@ -99,9 +89,7 @@ def check_cfo_quality_range(
     return df[mask].index.tolist()
 
 
-def check_ocf_ratio_range(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_ocf_ratio_range(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where operating_cash_flow_ratio is outside [0, 5]."""
     col = "operating_cash_flow_ratio"
     if col not in df.columns:
@@ -110,9 +98,7 @@ def check_ocf_ratio_range(
     return df[mask].index.tolist()
 
 
-def check_cagr_range(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_cagr_range(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where any CAGR column is outside [-80, 300]."""
     cagr_columns = [col for col in df.columns if col.endswith("_cagr_5yr")]
     if not cagr_columns:
@@ -125,9 +111,7 @@ def check_cagr_range(
     return df[mask].index.tolist()
 
 
-def check_npm_range(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_npm_range(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where net_profit_margin is outside [-100, 100]."""
     col = "net_profit_margin"
     if col not in df.columns:
@@ -147,9 +131,7 @@ def check_no_duplicate_company_year(
     return df[duplicated].index.tolist()
 
 
-def check_sector_not_null(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_sector_not_null(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where sector is null, empty string, or whitespace-only."""
     if sector_col not in df.columns:
         return []
@@ -162,9 +144,7 @@ def check_sector_not_null(
     return df[mask].index.tolist()
 
 
-def check_year_range(
-    df: pd.DataFrame, sector_col: str = "sector"
-) -> list[int]:
+def check_year_range(df: pd.DataFrame, sector_col: str = "sector") -> list[int]:
     """Rows where year is outside the supported reporting window."""
     col = "year"
     if col not in df.columns:
@@ -236,6 +216,7 @@ check_operating_cash_flow_ratio_range = check_ocf_ratio_range
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def run_dq_checks(
     df: pd.DataFrame,

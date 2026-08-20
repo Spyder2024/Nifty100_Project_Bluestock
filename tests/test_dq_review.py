@@ -34,6 +34,7 @@ SCHEMA_PATH = PROJECT_ROOT / "db" / "schema.sql"
 # Fixtures
 # ------------------------------------------------------------------
 
+
 @pytest.fixture()
 def db():
     conn = sqlite3.connect(":memory:")
@@ -41,9 +42,7 @@ def db():
     conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
 
     # --- Master data ---
-    conn.execute(
-        "INSERT INTO sectors VALUES ('IT','Information Technology')"
-    )
+    conn.execute("INSERT INTO sectors VALUES ('IT','Information Technology')")
     conn.execute(
         "INSERT INTO companies (company_id,company_name,sector_id) "
         "VALUES ('TCS','Tata Consultancy Services','IT')"
@@ -54,34 +53,105 @@ def db():
     )
 
     # --- TCS: clean data across 3 years ---
-    for yr, assets, liab, eq, rev, ni, eps, opm, tax, roe, de, cr, dp, ocf, icf, fcf in [
-        ("2021-03", 160000,  95000, 65000, 195000, 38000, 107.0, 25.8,  9500, 47.0, 0.10, 2.6, 25.0, 42000, -15000, -20000),
-        ("2022-03", 180000, 108000, 72000, 220000, 42500, 119.0, 26.1, 10200, 49.0, 0.12, 2.5, 28.0, 46000, -18000, -22000),
-        ("2023-03", 200000, 120000, 80000, 240000, 45000, 125.5, 26.5, 11000, 48.0, 0.15, 2.5, 30.0, 50000, -20000, -25000),
+    for (
+        yr,
+        assets,
+        liab,
+        eq,
+        rev,
+        ni,
+        eps,
+        opm,
+        tax,
+        roe,
+        de,
+        cr,
+        dp,
+        ocf,
+        icf,
+        fcf,
+    ) in [
+        (
+            "2021-03",
+            160000,
+            95000,
+            65000,
+            195000,
+            38000,
+            107.0,
+            25.8,
+            9500,
+            47.0,
+            0.10,
+            2.6,
+            25.0,
+            42000,
+            -15000,
+            -20000,
+        ),
+        (
+            "2022-03",
+            180000,
+            108000,
+            72000,
+            220000,
+            42500,
+            119.0,
+            26.1,
+            10200,
+            49.0,
+            0.12,
+            2.5,
+            28.0,
+            46000,
+            -18000,
+            -22000,
+        ),
+        (
+            "2023-03",
+            200000,
+            120000,
+            80000,
+            240000,
+            45000,
+            125.5,
+            26.5,
+            11000,
+            48.0,
+            0.15,
+            2.5,
+            30.0,
+            50000,
+            -20000,
+            -25000,
+        ),
     ]:
         conn.execute(
             "INSERT INTO balance_sheet (company_id,year,total_assets,total_liabilities,total_equity) "
-            "VALUES (?,?,?,?,?)", ("TCS", yr, assets, liab, eq)
+            "VALUES (?,?,?,?,?)",
+            ("TCS", yr, assets, liab, eq),
         )
         conn.execute(
             "INSERT INTO income_statement "
             "(company_id,year,revenue,net_income,eps,opm,tax_expense) "
-            "VALUES (?,?,?,?,?,?,?)", ("TCS", yr, rev, ni, eps, opm, tax)
+            "VALUES (?,?,?,?,?,?,?)",
+            ("TCS", yr, rev, ni, eps, opm, tax),
         )
         conn.execute(
             "INSERT INTO ratios "
             "(company_id,year,roe,opm,debt_to_equity,current_ratio,dividend_payout) "
-            "VALUES (?,?,?,?,?,?,?)", ("TCS", yr, roe, opm, de, cr, dp)
+            "VALUES (?,?,?,?,?,?,?)",
+            ("TCS", yr, roe, opm, de, cr, dp),
         )
         conn.execute(
             "INSERT INTO cash_flow "
             "(company_id,year,operating_cf,investing_cf,financing_cf) "
             "VALUES (?,?,?,?,?)",
-            ("TCS", yr, ocf, icf, fcf)
+            ("TCS", yr, ocf, icf, fcf),
         )
         conn.execute(
             "INSERT INTO prices (company_id,year,price_close) VALUES (?,?,'3000')",
-            ("TCS", yr)
+            ("TCS", yr),
         )
 
     # --- INFY: data with intentional DQ issues ---
@@ -112,6 +182,7 @@ def db():
 # 1. BS Balance (DQ-R01)
 # ==================================================================
 
+
 class TestCheckBsBalance:
     def test_pass_when_balanced(self, db):
         results = check_bs_balance(db, "TCS")
@@ -127,6 +198,7 @@ class TestCheckBsBalance:
 # ==================================================================
 # 2. OPM Cross-check (DQ-R02)
 # ==================================================================
+
 
 class TestCheckOpmCross:
     def test_pass_when_aligned(self, db):
@@ -146,6 +218,7 @@ class TestCheckOpmCross:
 # 3. EPS Sign (DQ-R03)
 # ==================================================================
 
+
 class TestCheckEpsSign:
     def test_pass_matching_signs(self, db):
         results = check_eps_sign(db, "TCS")
@@ -162,6 +235,7 @@ class TestCheckEpsSign:
 # ==================================================================
 # 4. Tax Rate (DQ-R04)
 # ==================================================================
+
 
 class TestCheckTaxRate:
     def test_pass_reasonable(self, db):
@@ -187,6 +261,7 @@ class TestCheckTaxRate:
 # 5. Positive Revenue (DQ-R05)
 # ==================================================================
 
+
 class TestCheckPositiveRevenue:
     def test_pass_positive(self, db):
         results = check_positive_revenue(db, "TCS")
@@ -207,6 +282,7 @@ class TestCheckPositiveRevenue:
 # 6. Year Coverage (DQ-R06)
 # ==================================================================
 
+
 class TestCheckYearCoverage:
     def test_fail_low_coverage(self, db):
         # INFY has only 1 year of data
@@ -225,6 +301,7 @@ class TestCheckYearCoverage:
 # 7. Dividend Payout (DQ-R08)
 # ==================================================================
 
+
 class TestCheckDividendPayout:
     def test_pass_within_limit(self, db):
         results = check_dividend_payout(db, "TCS")
@@ -242,6 +319,7 @@ class TestCheckDividendPayout:
 # 8. Debt-to-Equity (DQ-R09)
 # ==================================================================
 
+
 class TestCheckDebtEquity:
     def test_pass_non_negative(self, db):
         results = check_debt_equity(db, "TCS")
@@ -258,6 +336,7 @@ class TestCheckDebtEquity:
 # 9. Current Ratio (DQ-R10)
 # ==================================================================
 
+
 class TestCheckCurrentRatio:
     def test_pass_positive(self, db):
         results = check_current_ratio(db, "TCS")
@@ -267,6 +346,7 @@ class TestCheckCurrentRatio:
 # ==================================================================
 # 10. Missing Data (DQ-R07)
 # ==================================================================
+
 
 class TestCheckMissingData:
     def test_pass_low_nulls(self, db):

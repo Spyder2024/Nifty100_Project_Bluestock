@@ -13,7 +13,9 @@ import streamlit as st
 from src.dashboard.utils.db import get_companies, get_ratios, get_pl, get_bs, get_cf
 
 st.header("Annual Reports & Resources")
-st.caption("External links to exchange filings and a summary of data available in the database.")
+st.caption(
+    "External links to exchange filings and a summary of data available in the database."
+)
 
 # ── Company selector ───────────────────────────────────────────────────
 companies_df = get_companies()

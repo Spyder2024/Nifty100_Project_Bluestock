@@ -30,39 +30,46 @@ except ImportError:
     HAS_OPENPYXL = False
 
 from .peer import (
-    ALL_PEER_GROUPS,
     PEER_METRICS,
     load_peer_percentiles,
 )
 
-
 # ── Style constants ────────────────────────────────────────────────────────────
 
 _PCT_FILLS = {
-    "dark_green":  PatternFill(start_color="27AE60", end_color="27AE60", fill_type="solid"),
-    "light_green": PatternFill(start_color="82E0AA", end_color="82E0AA", fill_type="solid"),
-    "yellow":      PatternFill(start_color="F9E79F", end_color="F9E79F", fill_type="solid"),
-    "light_red":   PatternFill(start_color="F1948A", end_color="F1948A", fill_type="solid"),
-    "dark_red":    PatternFill(start_color="E74C3C", end_color="E74C3C", fill_type="solid"),
+    "dark_green": PatternFill(
+        start_color="27AE60", end_color="27AE60", fill_type="solid"
+    ),
+    "light_green": PatternFill(
+        start_color="82E0AA", end_color="82E0AA", fill_type="solid"
+    ),
+    "yellow": PatternFill(start_color="F9E79F", end_color="F9E79F", fill_type="solid"),
+    "light_red": PatternFill(
+        start_color="F1948A", end_color="F1948A", fill_type="solid"
+    ),
+    "dark_red": PatternFill(
+        start_color="E74C3C", end_color="E74C3C", fill_type="solid"
+    ),
 }
 
-HEADER_FILL  = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
-HEADER_FONT  = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
-BODY_FONT    = Font(name="Calibri", size=10)
-SCORE_FONT   = Font(name="Calibri", size=10, bold=True)
-BENCH_FILL   = PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
-BENCH_FONT   = Font(name="Calibri", bold=True, size=10, color="1A5276")
-THIN_BORDER  = Border(
+HEADER_FILL = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+HEADER_FONT = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+BODY_FONT = Font(name="Calibri", size=10)
+SCORE_FONT = Font(name="Calibri", size=10, bold=True)
+BENCH_FILL = PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
+BENCH_FONT = Font(name="Calibri", bold=True, size=10, color="1A5276")
+THIN_BORDER = Border(
     left=Side(style="thin", color="BDC3C7"),
     right=Side(style="thin", color="BDC3C7"),
     top=Side(style="thin", color="BDC3C7"),
     bottom=Side(style="thin", color="BDC3C7"),
 )
 CENTER = Alignment(horizontal="center", vertical="center")
-LEFT   = Alignment(horizontal="left", vertical="center")
+LEFT = Alignment(horizontal="left", vertical="center")
 
 
 # ── Small helpers ──────────────────────────────────────────────────────────────
+
 
 def _pct_fill(value) -> PatternFill:
     """Quintile fill for a 0–100 percentile value."""
@@ -82,9 +89,7 @@ def _pct_fill(value) -> PatternFill:
 
 def _write_df(ws, df: pd.DataFrame) -> None:
     """Write DataFrame (with header) starting at row 1, col 1."""
-    for r, row in enumerate(
-        dataframe_to_rows(df, index=False, header=True), start=1
-    ):
+    for r, row in enumerate(dataframe_to_rows(df, index=False, header=True), start=1):
         for c, val in enumerate(row, start=1):
             ws.cell(row=r, column=c, value=val)
 
@@ -111,6 +116,7 @@ def _get_col_indices(df: pd.DataFrame) -> dict[str, int]:
 
 
 # ── Colour + style application ─────────────────────────────────────────────────
+
 
 def _colour_score_cells(
     ws,
@@ -172,7 +178,9 @@ def _style_benchmark_row(
         cell.alignment = CENTER if col_name in score_set else LEFT
         cell.border = THIN_BORDER
 
+
 # ── Sheet builders ─────────────────────────────────────────────────────────────
+
 
 def _build_overview(
     ws,
@@ -238,7 +246,7 @@ def _build_peer_sheet(
     for m in metric_cols:
         benchmark[m] = round(pivot[m].mean(), 1)
     benchmark["Composite"] = round(pivot["Composite"].mean(), 1)
-    bench_df = pd.DataFrame([benchmark])
+    pd.DataFrame([benchmark])
 
     cols = ["company_name"] + metric_cols + ["Composite"]
     data_df = pivot[cols].copy()
@@ -247,7 +255,7 @@ def _build_peer_sheet(
     _write_df(ws, data_df)
 
     # Blank separator row
-    sep_row = len(data_df) + 2
+    len(data_df) + 2
     # Write benchmark
     bench_start = len(data_df) + 2
     for c_idx, col in enumerate(cols, start=1):
@@ -264,6 +272,7 @@ def _build_peer_sheet(
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
+
 
 def export_peer_comparison_excel(
     conn,
@@ -290,9 +299,7 @@ def export_peer_comparison_excel(
         Resolved path to the created file.
     """
     if not HAS_OPENPYXL:
-        raise ImportError(
-            "openpyxl is required.  Install with: pip install openpyxl"
-        )
+        raise ImportError("openpyxl is required.  Install with: pip install openpyxl")
 
     if metrics is None:
         metrics = PEER_METRICS

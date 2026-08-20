@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _safe_add(a: Optional[float], b: Optional[float]) -> Optional[float]:
     """Return a + b, or None if either operand is None."""
     if a is None or b is None:
@@ -34,6 +35,7 @@ def _safe_add(a: Optional[float], b: Optional[float]) -> Optional[float]:
 # ---------------------------------------------------------------------------
 # Profitability ratios
 # ---------------------------------------------------------------------------
+
 
 def net_profit_margin(
     net_profit: Optional[float],
@@ -72,7 +74,9 @@ def operating_profit_margin(
             logger.warning(
                 "OPM cross-check mismatch: computed=%.2f%%, "
                 "source=%.2f%%, diff=%.2fpp",
-                computed, source_opm, diff,
+                computed,
+                source_opm,
+                diff,
             )
 
     return computed
@@ -152,9 +156,11 @@ def return_on_assets(
         return None
     return round((net_profit / total_assets) * 100, 2)
 
+
 # ---------------------------------------------------------------------------
 # Leverage ratios
 # ---------------------------------------------------------------------------
+
 
 def debt_to_equity(
     borrowings: Optional[float],
@@ -200,6 +206,7 @@ def is_high_leverage(
 # Coverage / solvency ratios
 # ---------------------------------------------------------------------------
 
+
 def interest_coverage_ratio(
     operating_profit: Optional[float],
     other_income: Optional[float],
@@ -242,6 +249,7 @@ def is_low_icr_warning(icr: Optional[float]) -> bool:
 # ---------------------------------------------------------------------------
 # Efficiency ratios
 # ---------------------------------------------------------------------------
+
 
 def net_debt(
     borrowings: Optional[float],
