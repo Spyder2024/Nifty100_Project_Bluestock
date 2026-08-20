@@ -1,0 +1,873 @@
+{
+  "info": {
+    "_postman_id": "nifty100-financial-intelligence-api",
+    "name": "Nifty 100 Financial Intelligence API",
+    "description": "Comprehensive REST API for Nifty 100 fundamental research, valuation, and analytics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "System Health & Database Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health"
+              ],
+              "query": []
+            },
+            "description": "Return health status, database row counts, uptime, and version."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "List All Nifty 100 Companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies"
+              ],
+              "query": [
+                {
+                  "key": "sector",
+                  "value": "",
+                  "description": "Filter by sector or broad_sector",
+                  "disabled": true
+                },
+                {
+                  "key": "market_cap_category",
+                  "value": "",
+                  "description": "Filter by Large Cap / Mid Cap",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Partial search by ticker or company name",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "description": "Max items per page",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset for pagination",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Return list of all 92 companies with id, company_name, broad_sector, sub_sector, roe_pct, roce_pct."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Full Company Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}"
+              ],
+              "query": []
+            },
+            "description": "Return full company profile: company fields + latest year KPIs + sector data."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profit & Loss / Income Statement History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}/pl",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}",
+                "pl"
+              ],
+              "query": [
+                {
+                  "key": "from_year",
+                  "value": "",
+                  "description": "Start year in YYYY-MM or YYYY format",
+                  "disabled": true
+                },
+                {
+                  "key": "to_year",
+                  "value": "",
+                  "description": "End year in YYYY-MM or YYYY format",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Return historical Profit & Loss / Income Statement data for the given company."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Balance Sheet History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}/bs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}",
+                "bs"
+              ],
+              "query": [
+                {
+                  "key": "from_year",
+                  "value": "",
+                  "description": "Start year in YYYY-MM or YYYY format",
+                  "disabled": true
+                },
+                {
+                  "key": "to_year",
+                  "value": "",
+                  "description": "End year in YYYY-MM or YYYY format",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Return historical Balance Sheet data for the given company."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cash Flow History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}/cashflow",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}",
+                "cashflow"
+              ],
+              "query": [
+                {
+                  "key": "from_year",
+                  "value": "",
+                  "description": "Start year in YYYY-MM or YYYY format",
+                  "disabled": true
+                },
+                {
+                  "key": "to_year",
+                  "value": "",
+                  "description": "End year in YYYY-MM or YYYY format",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Return historical Cash Flow statement data for the given company."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Computed KPIs and Financial Ratios History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}/ratios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}",
+                "ratios"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "",
+                  "description": "Filter for a specific year (e.g. 2024-03)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Return computed KPI ratios across all years (or single year if specified)."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Company Tearsheet PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}/tearsheet",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}",
+                "tearsheet"
+              ],
+              "query": []
+            },
+            "description": "Return pre-generated 2-page company tearsheet PDF as binary file download."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Company 8-Axis Radar Peer Comparison",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}/peers/compare",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}",
+                "peers",
+                "compare"
+              ],
+              "query": []
+            },
+            "description": "Return 8-axis radar comparison data: company percentiles + peer group avg + benchmark leader."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Annual Report Links with Validation Flags",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/companies/{ticker}/documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "companies",
+                "{ticker}",
+                "documents"
+              ],
+              "query": []
+            },
+            "description": "Return annual report links with is_url_valid boolean flag for each document."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Screener",
+      "item": [
+        {
+          "name": "Run Multi-Metric Stock Screener",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/screener",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "screener"
+              ],
+              "query": [
+                {
+                  "key": "min_roe",
+                  "value": "",
+                  "description": "Minimum Return on Equity (%)",
+                  "disabled": true
+                },
+                {
+                  "key": "max_de",
+                  "value": "",
+                  "description": "Maximum Debt to Equity",
+                  "disabled": true
+                },
+                {
+                  "key": "min_fcf",
+                  "value": "",
+                  "description": "Minimum Free Cash Flow in \u20b9 Cr",
+                  "disabled": true
+                },
+                {
+                  "key": "sector",
+                  "value": "",
+                  "description": "Filter by sector name",
+                  "disabled": true
+                },
+                {
+                  "key": "min_rev_cagr_5yr",
+                  "value": "",
+                  "description": "Minimum 5-Yr Revenue CAGR (%)",
+                  "disabled": true
+                },
+                {
+                  "key": "min_pat_cagr_5yr",
+                  "value": "",
+                  "description": "Minimum 5-Yr PAT/Net Profit CAGR (%)",
+                  "disabled": true
+                },
+                {
+                  "key": "max_pe",
+                  "value": "",
+                  "description": "Maximum Price to Earnings multiple",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Limit results",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Offset results",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Execute ranked fundamental screener across Nifty 100 constituents."
+          },
+          "response": []
+        },
+        {
+          "name": "List Screener Preset Strategies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/screener/presets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "screener",
+                "presets"
+              ],
+              "query": []
+            },
+            "description": "Return available screener preset screening strategies."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sectors",
+      "item": [
+        {
+          "name": "List All Sectors with Median KPIs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sectors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sectors"
+              ],
+              "query": []
+            },
+            "description": "Retrieve all sectors with constituent company counts, median ROE, median P/E, and median D/E."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Companies in a Sector",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sectors/{sector}/companies",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sectors",
+                "{sector}",
+                "companies"
+              ],
+              "query": []
+            },
+            "description": "Retrieve all companies in a specific sector with latest fundamental KPIs."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Peers",
+      "item": [
+        {
+          "name": "Get Peer Group Percentile Rankings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/peers/{group_name}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "peers",
+                "{group_name}"
+              ],
+              "query": []
+            },
+            "description": "Return all companies in a peer group with percentile ranks (0-100) across 10 key metrics."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Radar 8-Axis Comparison Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/peers/compare/{ticker}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "peers",
+                "compare",
+                "{ticker}"
+              ],
+              "query": []
+            },
+            "description": "Return 8-axis radar comparison data: company percentiles + peer group avg + benchmark leader."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Valuation",
+      "item": [
+        {
+          "name": "List Valuation Summary for All Companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/valuation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "valuation"
+              ],
+              "query": []
+            },
+            "description": "Retrieve intrinsic valuation estimates across Graham, DCF, DDM, and Relative models."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Intrinsic Valuation for Company",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/valuation/{company_id}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "valuation",
+                "{company_id}"
+              ],
+              "query": []
+            },
+            "description": "Get multi-model valuation details for a specific company."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Portfolio",
+      "item": [
+        {
+          "name": "Get Portfolio-wide Distribution Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/portfolio/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "portfolio",
+                "stats"
+              ],
+              "query": []
+            },
+            "description": "Retrieve P10, P25, P50, P75, P90, Mean, and Std across all 92 constituents."
+          },
+          "response": []
+        },
+        {
+          "name": "Get KMeans Financial Cluster Assignments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/portfolio/clusters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "portfolio",
+                "clusters"
+              ],
+              "query": []
+            },
+            "description": "Retrieve KMeans financial cluster labels and centroid distances for all companies."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sector Z-Score Outlier Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/portfolio/outliers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "portfolio",
+                "outliers"
+              ],
+              "query": []
+            },
+            "description": "Retrieve companies flagged as sector outliers (|Z| > 3.0)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documents & Reports",
+      "item": [
+        {
+          "name": "List Generated PDF Reports & Artifacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "documents"
+              ],
+              "query": []
+            },
+            "description": "List available generated reports including tearsheets, sector reports, and portfolio summaries."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Market Cap & Multiples",
+      "item": [
+        {
+          "name": "Get Historical Valuation Multiples (2019-2024)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/market-cap/{ticker}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "market-cap",
+                "{ticker}"
+              ],
+              "query": []
+            },
+            "description": "Return historical valuation multiples (P/E, P/B, EV/EBITDA, dividend yield) from 2019 to 2024."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "General",
+      "item": [
+        {
+          "name": "API Root & Index",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ],
+              "query": []
+            },
+            "description": "Root endpoint with service info and links to documentation and health check."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1298 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Nifty 100 Financial Intelligence API",
+    "description": "Production-ready REST API providing fundamental analysis, screener queries, intrinsic valuations, peer comparisons, KMeans financial clusters, and PDF reporting for the Nifty 100 index constituents.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "System Health & Database Status",
+        "description": "Return health status, database row counts, uptime, and version.",
+        "operationId": "health_check_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Check Api V1 Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "List All Nifty 100 Companies",
+        "description": "Return list of all 92 companies with id, company_name, broad_sector, sub_sector, roe_pct, roce_pct.",
+        "operationId": "list_companies_api_v1_companies_get",
+        "parameters": [
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by sector or broad_sector",
+              "title": "Sector"
+            },
+            "description": "Filter by sector or broad_sector"
+          },
+          {
+            "name": "market_cap_category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by Large Cap / Mid Cap",
+              "title": "Market Cap Category"
+            },
+            "description": "Filter by Large Cap / Mid Cap"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Partial search by ticker or company name",
+              "title": "Search"
+            },
+            "description": "Partial search by ticker or company name"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Max items per page",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Max items per page"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset for pagination",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset for pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Companies Api V1 Companies Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get Full Company Profile",
+        "description": "Return full company profile: company fields + latest year KPIs + sector data.",
+        "operationId": "get_company_profile_api_v1_companies__ticker__get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Profile Api V1 Companies  Ticker  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}/pl": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get Profit & Loss / Income Statement History",
+        "description": "Return historical Profit & Loss / Income Statement data for the given company.",
+        "operationId": "get_company_pl_api_v1_companies__ticker__pl_get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          },
+          {
+            "name": "from_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start year in YYYY-MM or YYYY format",
+              "title": "From Year"
+            },
+            "description": "Start year in YYYY-MM or YYYY format"
+          },
+          {
+            "name": "to_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End year in YYYY-MM or YYYY format",
+              "title": "To Year"
+            },
+            "description": "End year in YYYY-MM or YYYY format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Pl Api V1 Companies  Ticker  Pl Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}/bs": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get Balance Sheet History",
+        "description": "Return historical Balance Sheet data for the given company.",
+        "operationId": "get_company_bs_api_v1_companies__ticker__bs_get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          },
+          {
+            "name": "from_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start year in YYYY-MM or YYYY format",
+              "title": "From Year"
+            },
+            "description": "Start year in YYYY-MM or YYYY format"
+          },
+          {
+            "name": "to_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End year in YYYY-MM or YYYY format",
+              "title": "To Year"
+            },
+            "description": "End year in YYYY-MM or YYYY format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Bs Api V1 Companies  Ticker  Bs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}/cashflow": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get Cash Flow History",
+        "description": "Return historical Cash Flow statement data for the given company.",
+        "operationId": "get_company_cashflow_api_v1_companies__ticker__cashflow_get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          },
+          {
+            "name": "from_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start year in YYYY-MM or YYYY format",
+              "title": "From Year"
+            },
+            "description": "Start year in YYYY-MM or YYYY format"
+          },
+          {
+            "name": "to_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End year in YYYY-MM or YYYY format",
+              "title": "To Year"
+            },
+            "description": "End year in YYYY-MM or YYYY format"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Cashflow Api V1 Companies  Ticker  Cashflow Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}/ratios": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get Computed KPIs and Financial Ratios History",
+        "description": "Return computed KPI ratios across all years (or single year if specified).",
+        "operationId": "get_company_ratios_api_v1_companies__ticker__ratios_get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter for a specific year (e.g. 2024-03)",
+              "title": "Year"
+            },
+            "description": "Filter for a specific year (e.g. 2024-03)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Ratios Api V1 Companies  Ticker  Ratios Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}/tearsheet": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Download Company Tearsheet PDF",
+        "description": "Return pre-generated 2-page company tearsheet PDF as binary file download.",
+        "operationId": "get_company_tearsheet_api_v1_companies__ticker__tearsheet_get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}/peers/compare": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get Company 8-Axis Radar Peer Comparison",
+        "description": "Return 8-axis radar comparison data: company percentiles + peer group avg + benchmark leader.",
+        "operationId": "get_company_peer_comparison_api_v1_companies__ticker__peers_compare_get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Peer Comparison Api V1 Companies  Ticker  Peers Compare Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{ticker}/documents": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get Annual Report Links with Validation Flags",
+        "description": "Return annual report links with is_url_valid boolean flag for each document.",
+        "operationId": "get_company_documents_api_v1_companies__ticker__documents_get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Documents Api V1 Companies  Ticker  Documents Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/screener": {
+      "get": {
+        "tags": [
+          "Screener"
+        ],
+        "summary": "Run Multi-Metric Stock Screener",
+        "description": "Execute ranked fundamental screener across Nifty 100 constituents.",
+        "operationId": "run_screener_api_v1_screener_get",
+        "parameters": [
+          {
+            "name": "min_roe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum Return on Equity (%)",
+              "title": "Min Roe"
+            },
+            "description": "Minimum Return on Equity (%)"
+          },
+          {
+            "name": "max_de",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum Debt to Equity",
+              "title": "Max De"
+            },
+            "description": "Maximum Debt to Equity"
+          },
+          {
+            "name": "min_fcf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum Free Cash Flow in \u20b9 Cr",
+              "title": "Min Fcf"
+            },
+            "description": "Minimum Free Cash Flow in \u20b9 Cr"
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by sector name",
+              "title": "Sector"
+            },
+            "description": "Filter by sector name"
+          },
+          {
+            "name": "min_rev_cagr_5yr",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum 5-Yr Revenue CAGR (%)",
+              "title": "Min Rev Cagr 5Yr"
+            },
+            "description": "Minimum 5-Yr Revenue CAGR (%)"
+          },
+          {
+            "name": "min_pat_cagr_5yr",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum 5-Yr PAT/Net Profit CAGR (%)",
+              "title": "Min Pat Cagr 5Yr"
+            },
+            "description": "Minimum 5-Yr PAT/Net Profit CAGR (%)"
+          },
+          {
+            "name": "max_pe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum Price to Earnings multiple",
+              "title": "Max Pe"
+            },
+            "description": "Maximum Price to Earnings multiple"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Limit results",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Limit results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset results",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Run Screener Api V1 Screener Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/screener/presets": {
+      "get": {
+        "tags": [
+          "Screener"
+        ],
+        "summary": "List Screener Preset Strategies",
+        "description": "Return available screener preset screening strategies.",
+        "operationId": "list_presets_api_v1_screener_presets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Presets Api V1 Screener Presets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sectors": {
+      "get": {
+        "tags": [
+          "Sectors"
+        ],
+        "summary": "List All Sectors with Median KPIs",
+        "description": "Retrieve all sectors with constituent company counts, median ROE, median P/E, and median D/E.",
+        "operationId": "list_sectors_api_v1_sectors_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Sectors Api V1 Sectors Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sectors/{sector}/companies": {
+      "get": {
+        "tags": [
+          "Sectors"
+        ],
+        "summary": "Get All Companies in a Sector",
+        "description": "Retrieve all companies in a specific sector with latest fundamental KPIs.",
+        "operationId": "get_sector_companies_api_v1_sectors__sector__companies_get",
+        "parameters": [
+          {
+            "name": "sector",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sector"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Sector Companies Api V1 Sectors  Sector  Companies Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/peers/{group_name}": {
+      "get": {
+        "tags": [
+          "Peers"
+        ],
+        "summary": "Get Peer Group Percentile Rankings",
+        "description": "Return all companies in a peer group with percentile ranks (0-100) across 10 key metrics.",
+        "operationId": "get_peer_group_percentiles_api_v1_peers__group_name__get",
+        "parameters": [
+          {
+            "name": "group_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Group Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Peer Group Percentiles Api V1 Peers  Group Name  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/peers/compare/{ticker}": {
+      "get": {
+        "tags": [
+          "Peers"
+        ],
+        "summary": "Get Radar 8-Axis Comparison Data",
+        "description": "Return 8-axis radar comparison data: company percentiles + peer group avg + benchmark leader.",
+        "operationId": "get_peer_comparison_api_v1_peers_compare__ticker__get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Peer Comparison Api V1 Peers Compare  Ticker  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/valuation": {
+      "get": {
+        "tags": [
+          "Valuation"
+        ],
+        "summary": "List Valuation Summary for All Companies",
+        "description": "Retrieve intrinsic valuation estimates across Graham, DCF, DDM, and Relative models.",
+        "operationId": "list_valuations_api_v1_valuation_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Valuations Api V1 Valuation Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/valuation/{company_id}": {
+      "get": {
+        "tags": [
+          "Valuation"
+        ],
+        "summary": "Get Intrinsic Valuation for Company",
+        "description": "Get multi-model valuation details for a specific company.",
+        "operationId": "get_company_valuation_api_v1_valuation__company_id__get",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Company Valuation Api V1 Valuation  Company Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio/stats": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Get Portfolio-wide Distribution Statistics",
+        "description": "Retrieve P10, P25, P50, P75, P90, Mean, and Std across all 92 constituents.",
+        "operationId": "get_portfolio_stats_api_v1_portfolio_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Portfolio Stats Api V1 Portfolio Stats Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio/clusters": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Get KMeans Financial Cluster Assignments",
+        "description": "Retrieve KMeans financial cluster labels and centroid distances for all companies.",
+        "operationId": "get_clusters_api_v1_portfolio_clusters_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Clusters Api V1 Portfolio Clusters Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio/outliers": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Get Sector Z-Score Outlier Report",
+        "description": "Retrieve companies flagged as sector outliers (|Z| > 3.0).",
+        "operationId": "get_outliers_api_v1_portfolio_outliers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Outliers Api V1 Portfolio Outliers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents": {
+      "get": {
+        "tags": [
+          "Documents & Reports"
+        ],
+        "summary": "List Generated PDF Reports & Artifacts",
+        "description": "List available generated reports including tearsheets, sector reports, and portfolio summaries.",
+        "operationId": "list_documents_api_v1_documents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Documents Api V1 Documents Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market-cap/{ticker}": {
+      "get": {
+        "tags": [
+          "Market Cap & Multiples"
+        ],
+        "summary": "Get Historical Valuation Multiples (2019-2024)",
+        "description": "Return historical valuation multiples (P/E, P/B, EV/EBITDA, dividend yield) from 2019 to 2024.",
+        "operationId": "get_historical_multiples_api_v1_market_cap__ticker__get",
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ticker"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Historical Multiples Api V1 Market Cap  Ticker  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "General"
+        ],
+        "summary": "API Root & Index",
+        "description": "Root endpoint with service info and links to documentation and health check.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Root  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

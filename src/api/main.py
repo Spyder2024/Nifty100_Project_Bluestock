@@ -38,6 +38,7 @@ from fastapi.responses import JSONResponse
 from src.api.routers.companies import router as companies_router
 from src.api.routers.documents import router as documents_router
 from src.api.routers.health import get_db_path, router as health_router, set_start_time
+from src.api.routers.market_cap import router as market_cap_router
 from src.api.routers.peers import router as peers_router
 from src.api.routers.portfolio import router as portfolio_router
 from src.api.routers.screener import router as screener_router
@@ -140,6 +141,7 @@ v1_router.include_router(peers_router)
 v1_router.include_router(valuation_router)
 v1_router.include_router(portfolio_router)
 v1_router.include_router(documents_router)
+v1_router.include_router(market_cap_router)
 
 app.include_router(v1_router)
 
