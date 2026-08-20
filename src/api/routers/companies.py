@@ -114,6 +114,8 @@ async def list_companies(
         items = []
         for r in all_rows:
             d = dict(r)
+            if "id" in d and "company_id" not in d:
+                d["company_id"] = d["id"]
             mcap_val = d.pop("market_cap_cr", 0.0)
             cat = "Large Cap" if mcap_val >= 20000.0 or mcap_val == 0.0 else "Mid Cap"
             d["market_cap_category"] = cat
@@ -190,6 +192,7 @@ async def get_company_profile(ticker: str) -> Dict[str, Any]:
 
         return {
             "id": comp["company_id"],
+            "company_id": comp["company_id"],
             "company_name": comp["company_name"],
             "broad_sector": comp["broad_sector"],
             "sub_sector": comp["sub_sector"],
@@ -200,6 +203,10 @@ async def get_company_profile(ticker: str) -> Dict[str, Any]:
             "face_value": comp["face_value"],
             "market_cap_category": mcap_cat,
             "market_cap_cr": mcap_cr,
+            "latest_ratios": dict(latest_ratio) if latest_ratio else {},
+            "latest_income_statement": dict(latest_is) if latest_is else {},
+            "latest_balance_sheet": dict(latest_bs) if latest_bs else {},
+            "latest_cash_flow": dict(latest_cf) if latest_cf else {},
             "latest_kpis": {
                 "year": latest_ratio["year"] if latest_ratio else (latest_is["year"] if latest_is else None),
                 "roe_pct": latest_ratio["roe"] if latest_ratio else None,

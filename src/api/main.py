@@ -142,8 +142,16 @@ v1_router.include_router(valuation_router)
 v1_router.include_router(portfolio_router)
 v1_router.include_router(documents_router)
 v1_router.include_router(market_cap_router)
-
 app.include_router(v1_router)
+
+# Mount direct routes for non-prefixed convenience (/health, /companies, /screener, /sectors, etc.)
+app.include_router(health_router, include_in_schema=False)
+app.include_router(companies_router, include_in_schema=False)
+app.include_router(screener_router, include_in_schema=False)
+app.include_router(sectors_router, include_in_schema=False)
+app.include_router(peers_router, include_in_schema=False)
+app.include_router(portfolio_router, include_in_schema=False)
+app.include_router(market_cap_router, include_in_schema=False)
 
 
 # ── Root Welcome Endpoint ──────────────────────────────────────────

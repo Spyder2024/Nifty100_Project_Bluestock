@@ -114,12 +114,32 @@ async def list_sectors() -> Dict[str, Any]:
         conn.close()
 
 
+SECTOR_ALIASES: Dict[str, str] = {
+    "it": "Information Technology",
+    "information technology": "Information Technology",
+    "fmcg": "Consumer Staples",
+    "pharma": "Healthcare",
+    "banking": "Financials",
+    "auto": "Consumer Discretionary",
+    "telecom": "Communication Services",
+    "metals": "Materials",
+    "power": "Energy",
+    "infra": "Industrials",
+    "realty": "Real Estate",
+}
+
+
+@router.get("/{sector}", summary="Get All Companies in a Sector (Direct)")
 @router.get("/{sector}/companies", summary="Get All Companies in a Sector")
 async def get_sector_companies(sector: str) -> Dict[str, Any]:
     """Retrieve all companies in a specific sector with latest fundamental KPIs."""
     db_path = get_db_path()
     if not db_path.exists():
         raise HTTPException(status_code=503, detail="Database not available")
+
+    # Resolve alias if present
+    sec_query = sector.lower().strip()
+    sec_target = SECTOR_ALIASES.get(sec_query, sec_query)
 
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
@@ -139,10 +159,10 @@ async def get_sector_companies(sector: str) -> Dict[str, Any]:
                  AND cf.year = (SELECT MAX(cf2.year) FROM cash_flow cf2 WHERE cf2.company_id = c.company_id)
             LEFT JOIN market_cap m ON c.company_id = m.company_id
                  AND m.year = (SELECT MAX(m2.year) FROM market_cap m2 WHERE m2.company_id = c.company_id)
-            WHERE LOWER(s.sector_name) = ? OR LOWER(c.sector_id) = ?
+            WHERE LOWER(s.sector_name) = ? OR LOWER(c.sector_id) = ? OR LOWER(s.sector_id) = ?
             ORDER BY r.roe DESC
             """,
-            (sector.lower().strip(), sector.lower().strip()),
+            (sec_target.lower(), sec_target.lower(), sec_target.lower()),
         ).fetchall()
 
         if not sec_rows:
@@ -152,7 +172,7 @@ async def get_sector_companies(sector: str) -> Dict[str, Any]:
                 SELECT s.sector_name FROM sectors s
                 WHERE LOWER(s.sector_name) LIKE ? OR LOWER(s.sector_id) LIKE ?
                 """,
-                (f"%{sector.lower().strip()}%", f"%{sector.lower().strip()}%"),
+                (f"%{sec_target}%", f"%{sec_target}%"),
             ).fetchall()
 
             if not partial:
